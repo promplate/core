@@ -5,10 +5,10 @@
 """Tests for coverage.templite."""
 
 import re
+import unittest
 
-from coverage.templite import Templite, TempliteSyntaxError, TempliteValueError
+from templite import Templite, TempliteSyntaxError, TempliteValueError
 
-from tests.coveragetest import CoverageTest
 
 # pylint: disable=unused-variable
 
@@ -23,10 +23,8 @@ class AnyOldObject(object):
             setattr(self, n, v)
 
 
-class TempliteTest(CoverageTest):
+class TempliteTest(unittest.TestCase):
     """Tests for Templite."""
-
-    run_in_temp_dir = False
 
     def try_render(self, text, ctx=None, result=None):
         """Render `text` through `ctx`, and it had better be `result`.
