@@ -1,3 +1,4 @@
 .*cache*
 _*cache*
 *.pyc
+.coverage
