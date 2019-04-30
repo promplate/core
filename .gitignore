@@ -3,3 +3,4 @@ _*cache*
 *.pyc
 .coverage
 *.egg-info
+htmlcov
