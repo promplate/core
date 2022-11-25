@@ -1,6 +1,3 @@
-.*cache*
 _*cache*
 *.pyc
-.coverage
-*.egg-info
-htmlcov
+.idea
