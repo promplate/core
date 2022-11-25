@@ -12,7 +12,7 @@ from src.template import Template, TemplateSyntaxError, TemplateValueError
 
 # pylint: disable=unused-variable
 
-class AnyOldObject(object):
+class AnyOldObject:
     """Simple testing object.
 
     Use keyword arguments in the constructor to set attributes on the object.
@@ -353,3 +353,6 @@ class TempliteTest(unittest.TestCase):
             {"functions": map(itemgetter, range(3)), "nums": [1, 2, 3]},
             "@123!"
         )
+
+    def test_no_strict_mode(self):
+        self.assertEqual(Template("{{foo}}", strict=False).render(), "None")

@@ -11,6 +11,7 @@ http://aosabook.org/en/500L/a-template-engine.html
 # Coincidentally named the same as http://code.activestate.com/recipes/496702/
 
 import re
+from functools import cached_property
 
 
 class TemplateSyntaxError(ValueError):
@@ -26,7 +27,11 @@ class TemplateValueError(ValueError):
     pass
 
 
-class CodeBuilder(object):
+class TemplateContextError(KeyError):
+    pass
+
+
+class CodeBuilder:
     """Build source code conveniently."""
 
     def __init__(self, indent=0):
@@ -72,47 +77,10 @@ class CodeBuilder(object):
         return global_namespace
 
 
-class Template(object):
-    """A simple template renderer, for a nano-subset of Django syntax.
+class Template:
+    """A simple template renderer, for a nano-subset of Django syntax."""
 
-    Supported constructs are extended variable access::
-
-        {{var.modifier.modifier|filter|filter}}
-
-    loops::
-
-        {% for var in list %}...{% endfor %}
-
-    and ifs::
-
-        {% if var %}...{% endif %}
-
-    Comments are within curly-hash markers::
-
-        {# This will be ignored #}
-
-    Any of these constructs can have a hyphen at the end (`-}}`, `-%}`, `-#}`),
-    which will collapse the whitespace following the tag.
-
-    Construct a Templite with the template text, then use `render` against a
-    dictionary context to create a finished string::
-
-        templite = Templite('''
-            <h1>Hello {{name|upper}}!</h1>
-            {% for topic in topics %}
-                <p>You are interested in {{topic}}.</p>
-            {% endif %}
-            ''',
-            {'upper': str.upper},
-        )
-        text = templite.render({
-            'name': "Ned",
-            'topics': ['Python', 'Geometry', 'Juggling'],
-        })
-
-    """
-
-    def __init__(self, text, *contexts):
+    def __init__(self, text, *contexts, strict=True):
         """Construct a Templite with the given `text`.
 
         `contexts` are dictionaries of values to use for future renderings.
@@ -123,8 +91,15 @@ class Template(object):
         for context in contexts:
             self.context.update(context)
 
+        self.text = text
+        self.strict = strict
         self.vars_need = set()  # variables must provide
         self.vars_defs = set()  # variables been defined inside template (now loop only)
+
+    @cached_property
+    def code(self):
+        self.vars_need.clear()
+        self.vars_defs.clear()
 
         # We construct a function in source form, then compile it and hold onto
         # it, and execute it to render the template.
@@ -151,7 +126,7 @@ class Template(object):
         ops_stack = []
 
         # Split the text to form a list of tokens.
-        tokens = re.split(r"(?s)({{.*?}}|{%.*?%}|{#.*?#})", text)
+        tokens = re.split(r"(?s)({{.*?}}|{%.*?%}|{#.*?#})", self.text)
 
         squash = False
 
@@ -215,12 +190,20 @@ class Template(object):
 
         flush_output()
 
-        for var in self.vars_need:
-            vars_code.add_line(f"c_{var} = context[{var!r}]")
+        self.extract_context_to_code(vars_code)
 
         code.add_line(r"return ''.join(result)")
         code.dedent()
-        self._render_function = code.get_globals()["render_function"]
+
+        return code
+
+    def extract_context_to_code(self, code: CodeBuilder):
+        if self.strict:
+            for var in self.vars_need:
+                code.add_line(f"c_{var} = context[{var!r}]")
+        else:
+            for var in self.vars_need:
+                code.add_line(f"c_{var} = context.get({var!r})")
 
     def _expr_code(self, expr):
         """Generate a Python expression for `expr`."""
@@ -257,6 +240,10 @@ class Template(object):
         if name not in self.vars_defs:  # if it is already declared inside the template
             self.vars_need.add(name)
 
+    @cached_property
+    def render_function(self):
+        return self.code.get_globals()["render_function"]
+
     def render(self, context=None):
         """Render this template by applying it to `context`.
 
@@ -267,7 +254,16 @@ class Template(object):
         render_context = dict(self.context)
         if context:
             render_context.update(context)
-        return self._render_function(render_context, self._do_dots)
+
+        if not self.strict:
+            return self.render_function(render_context, self._do_dots)
+
+        render_function = self.render_function
+        missing_vars = tuple(v for v in self.vars_need if v not in render_context.keys())
+        if missing_vars:
+            raise TemplateContextError(f"Missing context: {', '.join(missing_vars)}")
+        # noinspection PyCallingNonCallable
+        return render_function(render_context, self._do_dots)
 
     @staticmethod
     def _do_dots(value, *dots):
