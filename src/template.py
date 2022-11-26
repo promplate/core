@@ -12,6 +12,8 @@ http://aosabook.org/en/500L/a-template-engine.html
 
 import re
 from functools import cached_property
+from os.path import isfile
+from typing import Generator
 
 
 class TemplateSyntaxError(ValueError):
@@ -96,6 +98,16 @@ class Template:
         self.vars_need = set()  # variables must provide
         self.vars_defs = set()  # variables been defined inside template (now loop only)
 
+    @classmethod
+    def load_template(cls, path, context=None, *args, **kwargs):
+        if not isfile(path):
+            raise FileNotFoundError(f"File {path} doesn't exists")
+
+        with open(path, *args, **kwargs) as f:
+            text = f.read()
+
+        return Template(text, context or {})
+
     @cached_property
     def code(self):
         self.vars_need.clear()
@@ -105,7 +117,7 @@ class Template:
         # it, and execute it to render the template.
         code = CodeBuilder()
 
-        code.add_line("def render_function(context, do_dots):")
+        code.add_line("def render_function(context, do_dots, load_template):")
         code.indent()
         vars_code = code.add_section()
         code.add_line("result = []")
@@ -143,7 +155,7 @@ class Template:
                 elif token.startswith("{{"):
                     # An expression to evaluate.
                     expr = self._expr_code(token[start:end].strip())
-                    buffered.append("to_str(%s)" % expr)
+                    buffered.append(f"to_str({expr})")
                 else:
                     assert token.startswith("{%")
                     # Action tag: split into words and parse further.
@@ -165,6 +177,18 @@ class Template:
                         self._declare(words[1])
                         code.add_line(f"for c_{words[1]} in {self._expr_code(words[3])}:")
                         code.indent()
+                    elif words[0] == "import":
+                        # A component.
+                        if len(words) != 4 or words[2] != "as":
+                            raise TemplateSyntaxError("Don't understand import", token)
+                        path, name = words[1], words[3]
+                        self._declare(name)
+                        code.add_line(f"c_{name} = load_template({path})")
+
+                    elif words[0] == "slot":
+                        code.add_line("yield ''.join(result)")
+                        code.add_line("result.clear()")
+
                     elif words[0].startswith("end"):
                         # End something. Pop the ops stack.
                         if len(words) != 1:
@@ -175,7 +199,21 @@ class Template:
                         start_what = ops_stack.pop()
                         if start_what != end_what:
                             raise TemplateSyntaxError("Mismatched end tag", end_what)
-                        code.dedent()
+
+                        if end_what == "for" or end_what == "if":
+                            code.dedent()
+                        else:
+                            code.add_line(f"append_result(next(c_{end_what}_renderer))")
+
+                    elif words[0] in self.vars_defs:
+                        # Use a component.
+                        name = words[0]
+                        if words[-1] == "end":
+                            code.add_line(f"append_result(c_{name}.render())")
+                        else:
+                            ops_stack.append(name)
+                            code.add_line(f"c_{name}_renderer = c_{name}.get_renderer()")
+                            code.add_line(f"append_result(next(c_{name}_renderer))")
                     else:
                         raise TemplateSyntaxError("Don't understand tag", words[0])
             else:
@@ -192,7 +230,8 @@ class Template:
 
         self.extract_context_to_code(vars_code)
 
-        code.add_line(r"return ''.join(result)")
+        code.add_line("yield ''.join(result)")
+        code.add_line("yield ''")
         code.dedent()
 
         return code
@@ -244,26 +283,25 @@ class Template:
     def render_function(self):
         return self.code.get_globals()["render_function"]
 
-    def render(self, context=None):
-        """Render this template by applying it to `context`.
-
-        `context` is a dictionary of values to use in this rendering.
-
-        """
+    def get_renderer(self, context: dict = None) -> Generator:
         # Make the complete context we'll use.
         render_context = dict(self.context)
         if context:
             render_context.update(context)
 
         if not self.strict:
-            return self.render_function(render_context, self._do_dots)
+            return self.render_function(render_context, self._do_dots, self.load_template)
 
+        # static namespace checking
         render_function = self.render_function
         missing_vars = tuple(v for v in self.vars_need if v not in render_context.keys())
         if missing_vars:
             raise TemplateContextError(f"Missing context: {', '.join(missing_vars)}")
         # noinspection PyCallingNonCallable
-        return render_function(render_context, self._do_dots)
+        return render_function(render_context, self._do_dots, self.load_template)
+
+    def render(self, context: dict = None):
+        return next(self.get_renderer(context))
 
     @staticmethod
     def _do_dots(value, *dots):
