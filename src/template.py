@@ -49,7 +49,7 @@ class CodeBuilder:
         Indentation and newline will be added for you, don't provide them.
 
         """
-        self.code.extend((" " * self.indent_level, line, "\n"))
+        self.code.extend(("\t" * self.indent_level, line, "\n"))
 
     def add_section(self):
         """Add a section, a sub-CodeBuilder."""
@@ -57,15 +57,13 @@ class CodeBuilder:
         self.code.append(section)
         return section
 
-    INDENT_STEP = 4  # PEP8 says so!
-
     def indent(self):
         """Increase the current indent for following lines."""
-        self.indent_level += self.INDENT_STEP
+        self.indent_level += 1
 
     def dedent(self):
         """Decrease the current indent for following lines."""
-        self.indent_level -= self.INDENT_STEP
+        self.indent_level -= 1
 
     def get_globals(self):
         """Execute the code, and return a dict of globals it defines."""
@@ -203,17 +201,17 @@ class Template:
                         if end_what == "for" or end_what == "if":
                             code.dedent()
                         else:
-                            code.add_line(f"append_result(next(c_{end_what}_renderer))")
+                            buffered.append(f"next(c_{end_what}_renderer)")
 
                     elif words[0] in self.vars_defs:
                         # Use a component.
                         name = words[0]
                         if words[-1] == "end":
-                            code.add_line(f"append_result(c_{name}.render())")
+                            buffered.append(f"c_{name}.render()")
                         else:
                             ops_stack.append(name)
                             code.add_line(f"c_{name}_renderer = c_{name}.get_renderer()")
-                            code.add_line(f"append_result(next(c_{name}_renderer))")
+                            buffered.append(f"next(c_{name}_renderer)")
                     else:
                         raise TemplateSyntaxError("Don't understand tag", words[0])
             else:

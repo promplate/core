@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime/mini.global.js"></script>
+</head>
+<body>
+<div class="grid place-items-center h-[90vh] m-5">
+    <div class="text-center">
+        <h1 class="text-4xl"> Click Me! </h1>
+        <button onclick="arguments[0].target.innerText++" class="m-1 h-12 w-16 bg-black text-white font-bolder duration-100 ease-out text-lg rounded hover:ring-4 ring-gray-300 active:scale-95% font-mono">
+            1
+        </button>
+        <button onclick="arguments[0].target.innerText++" class="m-1 h-12 w-16 bg-black text-white font-bolder duration-100 ease-out text-lg rounded hover:ring-4 ring-gray-300 active:scale-95% font-mono">
+            2
+        </button>
+        <button onclick="arguments[0].target.innerText++" class="m-1 h-12 w-16 bg-black text-white font-bolder duration-100 ease-out text-lg rounded hover:ring-4 ring-gray-300 active:scale-95% font-mono">
+            3
+        </button>
+        <p>
+            For now, the <code class="rounded bg-[#80808020] p-1">style</code> tags duplicate for identical components,
+            so we use <a href="https://antfu.me/posts/reimagine-atomic-css#what-is-atomic-css" class="no-underline text-sky-600 hover:text-teal-600 transition">atomic css</a> framework.
+        </p>
+    </div>
+</div>
+</body>
+</html>

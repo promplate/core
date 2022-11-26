@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime/mini.global.js"></script>
+    {% import "counter.html" as Counter %}
+</head>
+<body>
+<div class="grid place-items-center h-[90vh] m-5">
+    <div class="text-center">
+        <h1 class="text-4xl"> Click Me! </h1>
+        {% for i in nums %}
+            {% Counter %} {{ i }} {% endCounter %}
+        {% endfor %}
+        <p>
+            For now, the <code class="rounded bg-[#80808020] p-1">style</code> tags duplicate for identical components,
+            so we use <a href="https://antfu.me/posts/reimagine-atomic-css#what-is-atomic-css" class="no-underline text-sky-600 hover:text-teal-600 transition">atomic css</a> framework.
+        </p>
+    </div>
+</div>
+</body>
+</html>
