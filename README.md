@@ -9,6 +9,7 @@ I want to build a template framework in python that support component-based deve
 New an html skeleton and a component, then `render` them with some context.
 
 <details><summary><code>main.py</code> is the html generator</summary>
+<br>
 
 ```python
 from src.template import Template
@@ -16,8 +17,10 @@ a = Template.load_template("index.html")
 html = a.render({"nums": [1,2,3]})
 print(html)
 ```
+<br>
 </details>
 <details><summary><code>index.html</code> is the html skeleton</summary>
+<br>
 
 ```html
 {% import "counter.html" as Counter %}
@@ -30,14 +33,17 @@ print(html)
     {% endfor %}
 </div>
 ```
+<br>
 </details>
 <details><summary><code>button.html</code> is the component template</summary>
+<br>
 
 ```html
 <button onclick="arguments[0].target.innerText++">
     {% slot %}
 </button>
 ```
+<br>
 </details>
 
 Run `main.py` and you will get
@@ -57,7 +63,9 @@ Run `main.py` and you will get
 ```
 
 After adding some styles to it you can get this page like:
+
 [![](examples/counter/screenshot.png)](examples/counter/index.html)
+
 You can click each button separately to increase the number above it.
 
 ## Future Features (or TODOs?)
