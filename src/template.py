@@ -206,7 +206,7 @@ class Template:
                     elif words[0] in self.vars_defs:
                         # Use a component.
                         name = words[0]
-                        if words[-1] == "end":
+                        if "~" in words:
                             buffered.append(f"c_{name}.render()")
                         else:
                             ops_stack.append(name)
