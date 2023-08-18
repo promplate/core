@@ -1,3 +1,4 @@
 _*cache*
 *.pyc
 .idea
+.vscode

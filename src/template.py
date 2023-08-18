@@ -1,15 +1,3 @@
-# Licensed under the Apache License: http://www.apache.org/licenses/LICENSE-2.0
-# For details: https://github.com/nedbat/coveragepy/blob/master/NOTICE.txt
-
-"""A simple Python template renderer, for a nano-subset of Django syntax.
-
-For a detailed discussion of this code, see this chapter from 500 Lines:
-http://aosabook.org/en/500L/a-template-engine.html
-
-"""
-
-# Coincidentally named the same as http://code.activestate.com/recipes/496702/
-
 import re
 from functools import cached_property
 from os.path import isfile
@@ -26,6 +14,7 @@ class TemplateSyntaxError(ValueError):
 
 class TemplateValueError(ValueError):
     """Raised when an expression won't evaluate in a template."""
+
     pass
 
 
@@ -143,7 +132,7 @@ class Template:
         for token in tokens:
             if token.startswith("{"):
                 start, end = 2, -2
-                squash = (token[-3] == "-")
+                squash = token[-3] == "-"
                 if squash:
                     end = -3
 
@@ -173,7 +162,9 @@ class Template:
                             raise TemplateSyntaxError("Don't understand for", token)
                         ops_stack.append("for")
                         self._declare(words[1])
-                        code.add_line(f"for c_{words[1]} in {self._expr_code(words[3])}:")
+                        code.add_line(
+                            f"for c_{words[1]} in {self._expr_code(words[3])}:"
+                        )
                         code.indent()
                     elif words[0] == "import":
                         # A component.
@@ -210,7 +201,9 @@ class Template:
                             buffered.append(f"c_{name}.render()")
                         else:
                             ops_stack.append(name)
-                            code.add_line(f"c_{name}_renderer = c_{name}.get_renderer()")
+                            code.add_line(
+                                f"c_{name}_renderer = c_{name}.get_renderer()"
+                            )
                             buffered.append(f"next(c_{name}_renderer)")
                     else:
                         raise TemplateSyntaxError("Don't understand tag", words[0])
@@ -263,7 +256,7 @@ class Template:
     @staticmethod
     def check_naming(name):
         """Raises a syntax error if `name` is not a valid name."""
-        if not re.match(r"[_a-zA-Z][_a-zA-Z0-9]*$", name):
+        if not re.match(r"[_a-zA-Z]\w*$", name):
             raise TemplateSyntaxError("Not a valid name", name)
 
     def _declare(self, name):
@@ -288,11 +281,15 @@ class Template:
             render_context.update(context)
 
         if not self.strict:
-            return self.render_function(render_context, self._do_dots, self.load_template)
+            return self.render_function(
+                render_context, self._do_dots, self.load_template
+            )
 
         # static namespace checking
         render_function = self.render_function
-        missing_vars = tuple(v for v in self.vars_need if v not in render_context.keys())
+        missing_vars = tuple(
+            v for v in self.vars_need if v not in render_context.keys()
+        )
         if missing_vars:
             raise TemplateContextError(f"Missing context: {', '.join(missing_vars)}")
         # noinspection PyCallingNonCallable
