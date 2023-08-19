@@ -20,7 +20,8 @@ def parse_text(text: str):
 
             if name:
                 current_message["name"] = name
-        else:
+
+        elif current_message:
             buffer.append(line)
 
     if current_message:
@@ -28,3 +29,12 @@ def parse_text(text: str):
         messages.append(current_message)
 
     return messages
+
+
+class Prompt:
+    def __init__(self, messages):
+        self.messages = messages
+
+    @classmethod
+    def from_text(cls, text):
+        return cls(parse_text(text))
