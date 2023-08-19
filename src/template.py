@@ -1,6 +1,7 @@
 from functools import cached_property
-from .utils import *
+
 from .builder import *
+from .utils import *
 
 
 class Template:

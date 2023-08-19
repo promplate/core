@@ -7,6 +7,8 @@ splitter = compile(
 
 var_name_checker = compile(r"[_a-zA-Z]\w*$")
 
+is_message_start = compile(r"<\|\s?(user|system|assistant)\s?(\w{1,64})?\s?\|>")
+
 
 def split(text: str) -> list[str]:
     return splitter.split(text)
