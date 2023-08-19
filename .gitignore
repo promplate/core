@@ -2,3 +2,6 @@ _*cache*
 *.pyc
 .idea
 .vscode
+*dist*
+*lock*
+**/node_modules
