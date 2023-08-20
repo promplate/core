@@ -107,13 +107,36 @@ class Template(TemplateCore):
         return cls(Path(path).read_text(encoding))
 
     @classmethod
-    def aread(cls, path: str | Path, encoding="utf-8"):
-        return NotImplemented
+    async def aread(cls, path: str | Path, encoding="utf-8"):
+        from aiofiles import open
+
+        async with open(path, "r", encoding) as f:
+            content = f.read()
+
+        return cls(content)
+
+    _client = None
 
     @classmethod
-    def fetch(cls, url: str):
-        return NotImplemented
+    def fetch(cls, url: str, **kwargs):
+        if cls._client is None:
+            from httpx import Client
+
+            cls._client = Client(**kwargs)
+
+        response = cls._client.get(url)
+
+        return cls(response.text)
+
+    _aclient = None
 
     @classmethod
-    async def afetch(cls, url: str):
-        return NotImplemented
+    async def afetch(cls, url: str, **kwargs):
+        if cls._aclient is None:
+            from httpx import AsyncClient
+
+            cls._aclient = AsyncClient(**kwargs)
+
+        response = await cls._aclient.get(url)
+
+        return cls(response.text)

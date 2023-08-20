@@ -8,6 +8,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7"
+aiofiles = "^23.2.1"
+httpx = "^0.24.1"
 
 
 [build-system]
