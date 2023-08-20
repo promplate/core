@@ -1,8 +1,11 @@
 from functools import cached_property
 from pathlib import Path
+from typing import Any
 
 from .builder import *
 from .utils import *
+
+Context = dict[str, Any]
 
 
 class TemplateCore:
@@ -86,7 +89,7 @@ class TemplateCore:
         self.compile()
         return self._builder.get_render_function().__code__
 
-    def render(self, context: dict):
+    def render(self, context: Context) -> str:
         return eval(self._render_code, context)
 
     @cached_property
@@ -94,7 +97,7 @@ class TemplateCore:
         self.compile(sync=False)
         return self._builder.get_render_function().__code__
 
-    async def arender(self, context: dict):
+    async def arender(self, context: Context) -> str:
         return await eval(self._arender_code, context)
 
 

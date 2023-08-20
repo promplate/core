@@ -1,2 +1,2 @@
-from .template import Template
 from .chat import ChatTemplate
+from .template import Template
