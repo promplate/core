@@ -1,7 +1,16 @@
+from typing import Literal, TypedDict
+
+from .template import Template
 from .utils import is_message_start
 
+Message = TypedDict(
+    "Message",
+    {"role": Literal["user", "assistant", "system"], "content": str, "name": str},
+    total=False,
+)
 
-def parse_text(text: str):
+
+def parse_chat_markup(text: str) -> list[Message]:
     messages = []
     current_message = None
     buffer = []
@@ -31,10 +40,9 @@ def parse_text(text: str):
     return messages
 
 
-class Prompt:
-    def __init__(self, messages):
-        self.messages = messages
+class ChatTemplate(Template):
+    def render(self, context):
+        return parse_chat_markup(super().render(context))
 
-    @classmethod
-    def from_text(cls, text):
-        return cls(parse_text(text))
+    async def arender(self, context):
+        return parse_chat_markup(await super().arender(context))
