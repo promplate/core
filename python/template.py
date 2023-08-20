@@ -1,87 +1,116 @@
 from functools import cached_property
 
+from pathlib import Path
 from .builder import *
 from .utils import *
 
 
-class Template:
+class TemplateCore:
     """A simple template compiler, for a jinja2-like syntax."""
 
     def __init__(self, text):
         """Construct a Templite with the given `text`."""
 
         self.text = text
-        self.builder = get_base_builder()
-        self.buffer = []
-        self.ops_stack = []
+        self._builder = None
+        self._buffer = []
+        self._ops_stack = []
 
-    def flush(self):
-        if len(self.buffer) == 1:
-            self.builder.add_line(f"append_result({self.buffer[0]})")
-        elif len(self.buffer) > 1:
-            self.builder.add_line(f"extend_result(({', '.join(self.buffer)}))")
-        self.buffer.clear()
+    def _flush(self):
+        if len(self._buffer) == 1:
+            self._builder.add_line(f"append_result({self._buffer[0]})")
+        elif len(self._buffer) > 1:
+            self._builder.add_line(f"extend_result(({', '.join(self._buffer)}))")
+        self._buffer.clear()
 
     @staticmethod
-    def unwrap_token(token: str):
+    def _unwrap_token(token: str):
         return token.strip()[2:-2].strip("-").strip()
 
-    def on_literal_token(self, token: str):
-        self.buffer.append(repr(token))
+    def _on_literal_token(self, token: str):
+        self._buffer.append(repr(token))
 
-    def on_eval_token(self, token):
-        exp = self.unwrap_token(token)
-        self.buffer.append(f"repr({exp})")
+    def _on_eval_token(self, token):
+        exp = self._unwrap_token(token)
+        self._buffer.append(f"repr({exp})")
 
-    def on_comment_token(self, _):
+    def _on_comment_token(self, _):
         pass  # TODO: remove blank line
 
-    def on_special_token(self, token):
-        inner: str = self.unwrap_token(token)
+    def _on_special_token(self, token):
+        inner: str = self._unwrap_token(token)
 
         if inner.startswith("end"):
-            last = self.ops_stack.pop()
+            last = self._ops_stack.pop()
             assert last == inner.removeprefix("end")
-            self.flush()
-            self.builder.dedent()
+            self._flush()
+            self._builder.dedent()
 
         else:
             op, _ = inner.split(" ", 1)
 
             if op == "if" or op == "for":
-                self.ops_stack.append(op)
-                self.flush()
-                self.builder.add_line(f"{inner}:")
-                self.builder.indent()
+                self._ops_stack.append(op)
+                self._flush()
+                self._builder.add_line(f"{inner}:")
+                self._builder.indent()
 
             else:
                 raise NotImplementedError(op)
 
-    def compile(self):
+    def compile(self, sync=True):
+        self._builder = get_base_builder(sync)
+
         for token in split(self.text):
             s_token = token.strip()
             if not s_token.startswith("{"):
-                self.on_literal_token(token)
+                self._on_literal_token(token)
                 continue
             if s_token.startswith("{{"):
-                self.on_eval_token(token)
+                self._on_eval_token(token)
             elif s_token.startswith("{%"):
-                self.on_special_token(token)
+                self._on_special_token(token)
             else:
                 assert s_token.startswith("{#")
-                self.on_comment_token(token)
+                self._on_comment_token(token)
 
-        if self.ops_stack:
-            raise SyntaxError(self.ops_stack)
+        if self._ops_stack:
+            raise SyntaxError(self._ops_stack)
 
-        self.flush()
-        self.builder.add_line("return ''.join(result)")
-        self.builder.dedent()
+        self._flush()
+        self._builder.add_line("return ''.join(result)")
+        self._builder.dedent()
 
     @cached_property
-    def render_code(self):
+    def _render_code(self):
         self.compile()
-        return self.builder.get_render_function().__code__
+        return self._builder.get_render_function().__code__
 
     def render(self, context: dict):
-        return eval(self.render_code, context)
+        return eval(self._render_code, context)
+
+    @cached_property
+    def _arender_code(self):
+        self.compile(sync=False)
+        return self._builder.get_render_function().__code__
+
+    async def arender(self, context: dict):
+        return await eval(self._arender_code, context)
+
+
+class Template(TemplateCore):
+    @classmethod
+    def read(cls, path: str | Path, encoding="utf-8"):
+        return cls(Path(path).read_text(encoding))
+
+    @classmethod
+    def aread(cls, path: str | Path, encoding="utf-8"):
+        return NotImplemented
+
+    @classmethod
+    def fetch(cls, url: str):
+        return NotImplemented
+
+    @classmethod
+    async def afetch(cls, url: str):
+        return NotImplemented

@@ -46,10 +46,10 @@ class CodeBuilder:
         return global_namespace["render"]
 
 
-def get_base_builder():
+def get_base_builder(sync=True):
     return (
         CodeBuilder()
-        .add_line("def render():")
+        .add_line("def render():" if sync else "async def render():")
         .indent()
         .add_line("result = []")
         .add_line("append_result = result.append")
