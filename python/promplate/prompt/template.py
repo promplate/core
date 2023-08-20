@@ -61,7 +61,7 @@ class TemplateCore:
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)
 
-        for token in split(self.text):
+        for token in split_template_tokens(self.text):
             s_token = token.strip()
             if not s_token.startswith("{"):
                 self._on_literal_token(token)
