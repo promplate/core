@@ -110,8 +110,8 @@ class Template(TemplateCore):
     async def aread(cls, path: str | Path, encoding="utf-8"):
         from aiofiles import open
 
-        async with open(path, "r", encoding) as f:
-            content = f.read()
+        async with open(path, encoding=encoding) as f:
+            content = await f.read()
 
         return cls(content)
 

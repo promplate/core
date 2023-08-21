@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.1.1.1"
+version = "0.1.1.2"
 description = "cross-language prompt engineering framework"
 authors = ["Muspi Merol <admin@muspimerol.site>"]
 license = "MIT"
@@ -8,9 +8,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-aiofiles = "^23.2.1"
-httpx = "^0.24.1"
-openai = "^0.27.8"
+aiofiles = "^23.2"
+httpx = "^0.24"
+openai = "^0.27"
 
 
 [build-system]
