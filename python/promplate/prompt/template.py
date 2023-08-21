@@ -35,7 +35,7 @@ class TemplateCore:
 
     def _on_eval_token(self, token):
         exp = self._unwrap_token(token)
-        self._buffer.append(f"repr({exp})")
+        self._buffer.append(f"str({exp})")
 
     def _on_comment_token(self, _):
         pass  # TODO: remove blank line

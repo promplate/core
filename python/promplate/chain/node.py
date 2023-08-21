@@ -42,12 +42,12 @@ class Node(AbstractChain):
 
         assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
 
-        result = {"__result__": complete(prompt, **self.run_config)}
+        context["__result__"] = complete(prompt, **self.run_config)
 
         for process in self.post_processes:
-            result = process(result)
+            context = process(context)
 
-        return result
+        return context
 
     async def arun(self, context, complete):
         for process in self.pre_processes:
@@ -61,9 +61,9 @@ class Node(AbstractChain):
         assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
 
         if iscoroutinefunction(complete):
-            result = {"__result__": await complete(prompt, **self.run_config)}
+            context["__result__"] = await complete(prompt, **self.run_config)
         else:
-            result = {"__result__": complete(prompt, **self.run_config)}
+            context["__result__"] = complete(prompt, **self.run_config)
 
         for process in self.post_processes:
             if iscoroutinefunction(process):
@@ -71,7 +71,7 @@ class Node(AbstractChain):
             else:
                 context = process(context)
 
-        return result
+        return context
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
