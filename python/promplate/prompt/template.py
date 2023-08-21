@@ -90,7 +90,7 @@ class TemplateCore:
         return self._builder.get_render_function().__code__
 
     def render(self, context: Context) -> str:
-        return eval(self._render_code, None, context)
+        return eval(self._render_code, context.copy())
 
     @cached_property
     def _arender_code(self):
@@ -98,7 +98,7 @@ class TemplateCore:
         return self._builder.get_render_function().__code__
 
     async def arender(self, context: Context) -> str:
-        return await eval(self._arender_code, None, context)
+        return await eval(self._arender_code, context.copy())
 
 
 class Template(TemplateCore):

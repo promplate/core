@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.1.1.2"
+version = "0.1.1.3"
 description = "cross-language prompt engineering framework"
 authors = ["Muspi Merol <admin@muspimerol.site>"]
 license = "MIT"
