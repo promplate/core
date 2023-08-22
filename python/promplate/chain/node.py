@@ -6,6 +6,8 @@ from promplate.llm.base import *
 from promplate.prompt import ChatTemplate, Template
 from promplate.prompt.template import Context
 
+from .utils import append_decorator
+
 Process = Callable[[Context], Context]
 
 AsyncProcess = Callable[[Context], Awaitable[Context]]
@@ -33,6 +35,14 @@ class Node(AbstractChain):
         self.pre_processes = pre_processes or []
         self.post_processes = post_processes or []
         self.run_config = config
+
+    @property
+    def pre_process(self):
+        return append_decorator(self.pre_processes)
+
+    @property
+    def post_process(self):
+        return append_decorator(self.post_processes)
 
     def run(self, context, complete):
         for process in self.pre_processes:
