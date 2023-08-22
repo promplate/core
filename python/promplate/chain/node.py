@@ -109,14 +109,32 @@ class Chain(AbstractChain):
     def __iter__(self):
         return self.nodes
 
-    def run(self, context, complete):
+    def _run(self, context, complete):
         for node in self.nodes:
             context = node.run(context, complete)
 
         return context
 
-    async def arun(self, context, complete):
+    def run(self, context, complete):
+        try:
+            return self._run(context, complete)
+        except JumpTo as jump:
+            return jump.chain.run(jump.context or context, complete)
+
+    async def _arun(self, context, complete):
         for node in self.nodes:
             context = await node.arun(context, complete)
 
         return context
+
+    async def arun(self, context, complete):
+        try:
+            return await self._arun(context, complete)
+        except JumpTo as jump:
+            return await jump.chain.arun(jump.context or context, complete)
+
+
+class JumpTo(Exception):
+    def __init__(self, chain: Node | Chain, context: Context | None = None):
+        self.chain = chain
+        self.context = context
