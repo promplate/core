@@ -1,5 +1,7 @@
-def append_decorator(to_append: list):
-    def append_item(item):
-        to_append.append(item)
+def appender(to_append: list):
+    def append_processer(func):
+        to_append.append(func)
 
-    return append_item
+        return func
+
+    return append_processer

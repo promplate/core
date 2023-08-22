@@ -6,7 +6,7 @@ from promplate.llm.base import *
 from promplate.prompt import ChatTemplate, Template
 from promplate.prompt.template import Context
 
-from .utils import append_decorator
+from .utils import appender
 
 Process = Callable[[Context], Context]
 
@@ -38,11 +38,11 @@ class Node(AbstractChain):
 
     @property
     def pre_process(self):
-        return append_decorator(self.pre_processes)
+        return appender(self.pre_processes)
 
     @property
     def post_process(self):
-        return append_decorator(self.post_processes)
+        return appender(self.post_processes)
 
     def run(self, context, complete):
         for process in self.pre_processes:
