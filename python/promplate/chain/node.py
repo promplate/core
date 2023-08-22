@@ -46,7 +46,7 @@ class Node(AbstractChain):
 
     def run(self, context, complete):
         for process in self.pre_processes:
-            context = process(context)
+            context = process(context) or context
 
         prompt = self.template.render(context)
 
@@ -55,16 +55,16 @@ class Node(AbstractChain):
         context["__result__"] = complete(prompt, **self.run_config)
 
         for process in self.post_processes:
-            context = process(context)
+            context = process(context) or context
 
         return context
 
     async def arun(self, context, complete):
         for process in self.pre_processes:
             if iscoroutinefunction(process):
-                context = await process(context)
+                context = await process(context) or context
             else:
-                context = process(context)
+                context = process(context) or context
 
         prompt = await self.template.arender(context)
 
@@ -77,9 +77,9 @@ class Node(AbstractChain):
 
         for process in self.post_processes:
             if iscoroutinefunction(process):
-                context = await process(context)
+                context = await process(context) or context
             else:
-                context = process(context)
+                context = process(context) or context
 
         return context
 
