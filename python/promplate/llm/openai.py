@@ -1,5 +1,4 @@
 from openai import ChatCompletion, Completion
-
 from promplate.prompt.chat import Message
 
 

@@ -107,7 +107,7 @@ class Chain(AbstractChain):
         return self.next(chain)
 
     def __iter__(self):
-        return self.nodes
+        return iter(self.nodes)
 
     def _run(self, context, complete):
         for node in self.nodes:

@@ -1,1 +1,1 @@
-from .node import Chain, Node
+from .node import Chain, JumpTo, Node
