@@ -15,11 +15,11 @@ AsyncProcess = Callable[[Context], Awaitable[Context]]
 
 class AbstractChain(ABC):
     @abstractclassmethod
-    def run(self, context: Context, complete: Complete):
+    def run(self, context: Context, complete: Complete | None):
         pass
 
     @abstractclassmethod
-    async def arun(self, context: Context, complete: Complete | AsyncComplete):
+    async def arun(self, context: Context, complete: Complete | AsyncComplete | None):
         pass
 
 
@@ -29,11 +29,13 @@ class Node(AbstractChain):
         template: Template,
         pre_processes: list[Process | AsyncProcess] | None = None,
         post_processes: list[Process | AsyncProcess] | None = None,
+        complete: Complete | AsyncComplete | None = None,
         **config,
     ):
         self.template = template
         self.pre_processes = pre_processes or []
         self.post_processes = post_processes or []
+        self.complete = complete
         self.run_config = config
 
     @property
@@ -44,7 +46,10 @@ class Node(AbstractChain):
     def post_process(self):
         return appender(self.post_processes)
 
-    def run(self, context, complete):
+    def run(self, context, complete=None):
+        complete = complete or self.complete
+        assert complete is not None
+
         for process in self.pre_processes:
             context = process(context) or context
 
@@ -59,7 +64,10 @@ class Node(AbstractChain):
 
         return context
 
-    async def arun(self, context, complete):
+    async def arun(self, context, complete=None):
+        complete = complete or self.complete
+        assert complete is not None
+
         for process in self.pre_processes:
             if iscoroutinefunction(process):
                 context = await process(context) or context
@@ -94,8 +102,13 @@ class Node(AbstractChain):
 
 
 class Chain(AbstractChain):
-    def __init__(self, *nodes: AbstractChain):
+    def __init__(
+        self,
+        *nodes: AbstractChain,
+        complete: Complete | AsyncComplete | None = None,
+    ):
         self.nodes = list(nodes)
+        self.complete = complete
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
@@ -115,7 +128,8 @@ class Chain(AbstractChain):
 
         return context
 
-    def run(self, context, complete):
+    def run(self, context, complete=None):
+        complete = complete or self.complete
         try:
             return self._run(context, complete)
         except JumpTo as jump:
@@ -127,7 +141,8 @@ class Chain(AbstractChain):
 
         return context
 
-    async def arun(self, context, complete):
+    async def arun(self, context, complete=None):
+        complete = complete or self.complete
         try:
             return await self._arun(context, complete)
         except JumpTo as jump:
