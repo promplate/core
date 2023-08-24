@@ -23,7 +23,7 @@ I try to make the syntax compatible with `Jinja2`.
   - the used component only renders once, after the end tag (a buffer seems to be unavoidable)
   - an _elevation_ of slot statements may be the necessary and sufficient condition
 - [ ] support while loop and isolated variable declaration
-- [ ] `else` and `elif` tag
+- [x] `else` and `elif` tag
 - [ ] directory based routing
 - [ ] caching (and cache-controls maybe?)
 - [ ] implement more [loaders](https://jinja.palletsprojects.com/api/#loaders)

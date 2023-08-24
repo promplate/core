@@ -58,6 +58,12 @@ class TemplateCore:
                 self._builder.add_line(f"{inner}:")
                 self._builder.indent()
 
+            elif op == "else" or op == "elif":
+                self._flush()
+                self._builder.dedent()
+                self._builder.add_line(f"{inner}:")
+                self._builder.indent()
+
             else:
                 raise NotImplementedError(op)
 
