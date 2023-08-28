@@ -6,11 +6,13 @@ from promplate.llm.base import *
 from promplate.prompt import ChatTemplate, Template
 from promplate.prompt.template import Context
 
-from .utils import appender
+from .utils import appender, count_position_parameters
 
-Process = Callable[[Context], Context]
+PreProcess = Callable[[Context], Context]
+PostProcess = PreProcess | Callable[[Context, str], Context]
 
-AsyncProcess = Callable[[Context], Awaitable[Context]]
+AsyncPreProcess = Callable[[Context], Awaitable[Context]]
+AsyncPostProcess = AsyncPreProcess | Callable[[Context, str], Awaitable[Context]]
 
 
 class AbstractChain(ABC):
@@ -27,8 +29,8 @@ class Node(AbstractChain):
     def __init__(
         self,
         template: Template,
-        pre_processes: list[Process | AsyncProcess] | None = None,
-        post_processes: list[Process | AsyncProcess] | None = None,
+        pre_processes: list[PreProcess | AsyncPreProcess] | None = None,
+        post_processes: list[PostProcess | AsyncPostProcess] | None = None,
         complete: Complete | AsyncComplete | None = None,
         **config,
     ):
@@ -46,6 +48,17 @@ class Node(AbstractChain):
     def post_process(self):
         return appender(self.post_processes)
 
+    @staticmethod
+    def via(
+        process: PostProcess | AsyncPostProcess,
+        context: Context,
+        result: str,
+    ) -> Context | Awaitable[Context]:
+        if count_position_parameters(process) == 1:
+            context = process(context) or context
+        else:
+            context = process(context, result) or context
+
     def run(self, context, complete=None):
         complete = complete or self.complete
         assert complete is not None
@@ -57,10 +70,10 @@ class Node(AbstractChain):
 
         assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
 
-        context["__result__"] = complete(prompt, **self.run_config)
+        result = context["__result__"] = complete(prompt, **self.run_config)
 
         for process in self.post_processes:
-            context = process(context) or context
+            context = self.via(process, context, result) or context
 
         return context
 
@@ -79,15 +92,15 @@ class Node(AbstractChain):
         assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
 
         if iscoroutinefunction(complete):
-            context["__result__"] = await complete(prompt, **self.run_config)
+            result = context["__result__"] = await complete(prompt, **self.run_config)
         else:
-            context["__result__"] = complete(prompt, **self.run_config)
+            result = context["__result__"] = complete(prompt, **self.run_config)
 
         for process in self.post_processes:
             if iscoroutinefunction(process):
-                context = await process(context) or context
+                context = await self.via(process, context, result) or context
             else:
-                context = process(context) or context
+                context = self.via(process, context, result) or context
 
         return context
 
