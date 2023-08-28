@@ -50,7 +50,7 @@ class TemplateCore:
             self._builder.dedent()
 
         else:
-            op, _ = inner.split(" ", 1)
+            op = inner.split(" ", 1)[0]
 
             if op == "if" or op == "for":
                 self._ops_stack.append(op)
