@@ -1,11 +1,11 @@
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from .builder import *
 from .utils import *
 
-Context = dict[str, Any]
+Context = Mapping[str, Any]
 
 
 class TemplateCore:
