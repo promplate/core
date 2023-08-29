@@ -1,4 +1,4 @@
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from inspect import iscoroutinefunction
 from typing import Awaitable, Callable
 
@@ -16,11 +16,11 @@ AsyncPostProcess = AsyncPreProcess | Callable[[Context, str], Awaitable[Context]
 
 
 class AbstractChain(ABC):
-    @abstractclassmethod
+    @abstractmethod
     def run(self, context: Context, complete: Complete | None):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     async def arun(self, context: Context, complete: Complete | AsyncComplete | None):
         pass
 
@@ -137,7 +137,7 @@ class Chain(AbstractChain):
 
     def _run(self, context, complete):
         for node in self.nodes:
-            context = node.run(context, complete)
+            context = node.run(context, node.complete or complete)
 
         return context
 
@@ -150,7 +150,7 @@ class Chain(AbstractChain):
 
     async def _arun(self, context, complete):
         for node in self.nodes:
-            context = await node.arun(context, complete)
+            context = await node.arun(context, node.complete or complete)
 
         return context
 
