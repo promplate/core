@@ -35,7 +35,7 @@ def text_generate(**default_config) -> GenerateText:
 def async_text_generate(**default_config) -> AsyncGenerateText:
     async def async_generate_text(text: str, **config):
         config = default_config | config | {"stream": True, "prompt": text}
-        stream = Completion.acreate(**config)
+        stream = await Completion.acreate(**config)
         async for event in stream:
             yield event["choices"][0]["text"]
 
@@ -74,7 +74,7 @@ def chat_generate(**default_config) -> GenerateChat:
 def async_chat_generate(**default_config) -> AsyncGenerateChat:
     async def async_generate_chat(messages: list[Message], **config):
         config = default_config | config | {"stream": True, "messages": messages}
-        stream = ChatCompletion.acreate(**config)
+        stream = await ChatCompletion.acreate(**config)
         async for event in stream:
             delta: dict = event["choices"][0]["delta"]
             yield delta.get("content", "")
