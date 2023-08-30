@@ -17,12 +17,22 @@ AsyncPostProcess = AsyncPreProcess | Callable[[Context, str], Awaitable[Context]
 
 class AbstractChain(ABC):
     @abstractmethod
-    def run(self, context: Context, complete: Complete | None):
+    def run(
+        self,
+        context: Context,
+        complete: Complete | None = None,
+    ) -> Context:
         pass
 
     @abstractmethod
-    async def arun(self, context: Context, complete: Complete | AsyncComplete | None):
+    async def arun(
+        self,
+        context: Context,
+        complete: Complete | AsyncComplete | None = None,
+    ) -> Context:
         pass
+
+    complete: Complete | AsyncComplete | None
 
 
 class Node(AbstractChain):

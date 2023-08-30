@@ -1,3 +1,4 @@
+from copy import copy
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Mapping
@@ -96,7 +97,7 @@ class TemplateCore:
         return self._builder.get_render_function().__code__
 
     def render(self, context: Context) -> str:
-        return eval(self._render_code, context.copy())
+        return eval(self._render_code, copy(context))
 
     @cached_property
     def _arender_code(self):
