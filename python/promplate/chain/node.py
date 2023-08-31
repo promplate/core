@@ -8,11 +8,19 @@ from promplate.prompt.template import Context
 
 from .utils import appender, count_position_parameters
 
+PostProcessReturns = Context | None | tuple[Context | None, str]
+
 PreProcess = Callable[[Context], Context]
-PostProcess = PreProcess | Callable[[Context, str], Context]
+PostProcess = (
+    Callable[[Context], PostProcessReturns]
+    | Callable[[Context, str], PostProcessReturns]
+)
 
 AsyncPreProcess = Callable[[Context], Awaitable[Context]]
-AsyncPostProcess = AsyncPreProcess | Callable[[Context, str], Awaitable[Context]]
+AsyncPostProcess = (
+    Callable[[Context], Awaitable[PostProcessReturns]]
+    | Callable[[Context, str], Awaitable[PostProcessReturns]]
+)
 
 
 class AbstractChain(ABC):
@@ -59,24 +67,24 @@ class Node(AbstractChain):
         return appender(self.post_processes)
 
     @staticmethod
-    def _via(
-        process: PostProcess | AsyncPostProcess,
-        context: Context,
-        result: str,
-    ) -> Context | Awaitable[Context]:
+    def _via(process: PostProcess | AsyncPostProcess, context: Context, result):
         if count_position_parameters(process) == 1:
-            context = process(context) or context
+            return process(context)
         else:
-            context = process(context, result) or context
+            return process(context, result)
 
     def _apply_pre_processes(self, context: Context):
         for process in self.pre_processes:
             context = process(context) or context
         return context
 
-    def _apply_post_processes(self, context: Context, result: str):
+    def _apply_post_processes(self, context: Context, result):
         for process in self.post_processes:
-            context = self._via(process, context, result) or context
+            ret = self._via(process, context, result) or context
+            if isinstance(ret, tuple):
+                ret, result = ret
+            context = ret or context
+
         return context
 
     def run(self, context, complete=None):
@@ -103,12 +111,16 @@ class Node(AbstractChain):
 
         return context
 
-    async def _apply_async_post_processes(self, context: Context, result: str):
+    async def _apply_async_post_processes(self, context: Context, result):
         for process in self.post_processes:
             if iscoroutinefunction(process):
-                context = await self._via(process, context, result) or context
+                ret = await self._via(process, context, result)
             else:
-                context = self._via(process, context, result) or context
+                ret = self._via(process, context, result)
+
+            if isinstance(ret, tuple):
+                ret, result = ret
+            context = ret or context
 
         return context
 
