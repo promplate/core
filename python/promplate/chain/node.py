@@ -38,7 +38,7 @@ class AbstractChain(ABC):
 class Node(AbstractChain):
     def __init__(
         self,
-        template: Template,
+        template: Template | ChatTemplate,
         pre_processes: list[PreProcess | AsyncPreProcess] | None = None,
         post_processes: list[PostProcess | AsyncPostProcess] | None = None,
         complete: Complete | AsyncComplete | None = None,
@@ -59,7 +59,7 @@ class Node(AbstractChain):
         return appender(self.post_processes)
 
     @staticmethod
-    def via(
+    def _via(
         process: PostProcess | AsyncPostProcess,
         context: Context,
         result: str,
@@ -69,21 +69,46 @@ class Node(AbstractChain):
         else:
             context = process(context, result) or context
 
+    def _apply_pre_processes(self, context: Context):
+        for process in self.pre_processes:
+            context = process(context) or context
+        return context
+
+    def _apply_post_processes(self, context: Context, result: str):
+        for process in self.post_processes:
+            context = self._via(process, context, result) or context
+        return context
+
     def run(self, context, complete=None):
         complete = complete or self.complete
         assert complete is not None
 
-        for process in self.pre_processes:
-            context = process(context) or context
-
+        context = self._apply_pre_processes(context)
         prompt = self.template.render(context)
 
         assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
 
         result = context["__result__"] = complete(prompt, **self.run_config)
 
+        context = self._apply_post_processes(context, result)
+
+        return context
+
+    async def _apply_async_pre_processes(self, context: Context):
+        for process in self.pre_processes:
+            if iscoroutinefunction(process):
+                context = await process(context) or context
+            else:
+                context = process(context) or context
+
+        return context
+
+    async def _apply_async_post_processes(self, context: Context, result: str):
         for process in self.post_processes:
-            context = self.via(process, context, result) or context
+            if iscoroutinefunction(process):
+                context = await self._via(process, context, result) or context
+            else:
+                context = self._via(process, context, result) or context
 
         return context
 
@@ -91,12 +116,7 @@ class Node(AbstractChain):
         complete = complete or self.complete
         assert complete is not None
 
-        for process in self.pre_processes:
-            if iscoroutinefunction(process):
-                context = await process(context) or context
-            else:
-                context = process(context) or context
-
+        context = await self._apply_async_pre_processes(context)
         prompt = await self.template.arender(context)
 
         assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
@@ -106,11 +126,7 @@ class Node(AbstractChain):
         else:
             result = context["__result__"] = complete(prompt, **self.run_config)
 
-        for process in self.post_processes:
-            if iscoroutinefunction(process):
-                context = await self.via(process, context, result) or context
-            else:
-                context = self.via(process, context, result) or context
+        context = await self._apply_async_post_processes(context, result)
 
         return context
 
@@ -122,6 +138,14 @@ class Node(AbstractChain):
 
     def __add__(self, chain: AbstractChain):
         return self.next(chain)
+
+    def render(self, context: Context):
+        context = self._apply_pre_processes(context)
+        return self.template.render(context)
+
+    async def arender(self, context: Context):
+        context = await self._apply_async_pre_processes(context)
+        return await self.template.arender(context)
 
 
 class Chain(AbstractChain):
