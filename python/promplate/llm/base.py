@@ -1,17 +1,50 @@
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterator
+from typing import AsyncIterable, Awaitable, Iterable, Protocol
 
 from promplate.prompt.chat import Message
 
-CompleteText = Callable[[str, Any], str]
-CompleteChat = Callable[[list[Message], Any], str]
-GenerateText = Callable[[str, Any], Iterator[str]]
-GenerateChat = Callable[[list[Message], Any], Iterator[str]]
+
+class CompleteText(Protocol):
+    def __call__(self, text: str, **config) -> str:
+        ...
+
+
+class CompleteChat(Protocol):
+    def __call__(self, messages: list[Message], **config) -> str:
+        ...
+
+
+class GenerateText(Protocol):
+    def __call__(self, text: str, **config) -> Iterable[str]:
+        ...
+
+
+class GenerateChat(Protocol):
+    def __call__(self, messages: list[Message], **config) -> Iterable[str]:
+        ...
+
+
+class AsyncCompleteText(Protocol):
+    def __call__(self, text: str, **config) -> Awaitable[str]:
+        ...
+
+
+class AsyncCompleteChat(Protocol):
+    def __call__(self, messages: list[Message], **config) -> Awaitable[str]:
+        ...
+
+
+class AsyncGenerateText(Protocol):
+    def __call__(self, text: str, **config) -> AsyncIterable[str]:
+        ...
+
+
+class AsyncGenerateChat(Protocol):
+    def __call__(self, messages: list[Message], **config) -> AsyncIterable[str]:
+        ...
+
+
 Complete = CompleteText | CompleteChat
 Generate = GenerateText | GenerateChat
 
-AsyncCompleteText = Callable[[str, Any], Awaitable[str]]
-AsyncCompleteChat = Callable[[list[Message], Any], Awaitable[str]]
-AsyncGenerateText = Callable[[str, Any], AsyncIterator[str]]
-AsyncGenerateChat = Callable[[list[Message], Any], AsyncIterator[str]]
 AsyncComplete = AsyncCompleteText | AsyncCompleteChat
 AsyncGenerate = AsyncGenerateText | AsyncGenerateChat

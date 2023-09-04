@@ -145,8 +145,10 @@ class Node(AbstractChain):
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
             return Chain(self, chain)
-        else:
+        elif isinstance(chain, Chain):
             return Chain(self, *chain)
+        else:
+            raise NotImplementedError
 
     def __add__(self, chain: AbstractChain):
         return self.next(chain)
@@ -172,8 +174,10 @@ class Chain(AbstractChain):
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
             return Chain(*self, chain)
-        else:
+        elif isinstance(chain, Chain):
             return Chain(*self, *chain)
+        else:
+            raise NotImplementedError
 
     def __add__(self, chain):
         return self.next(chain)

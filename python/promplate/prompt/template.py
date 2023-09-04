@@ -1,12 +1,12 @@
 from copy import copy
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from .builder import *
 from .utils import *
 
-Context = Mapping[str, Any]
+Context = dict[str, Any]  # globals must be a real dict
 
 
 class TemplateCore:
@@ -16,7 +16,6 @@ class TemplateCore:
         """Construct a Templite with the given `text`."""
 
         self.text = text
-        self._builder = None
         self._buffer = []
         self._ops_stack = []
 
@@ -105,7 +104,7 @@ class TemplateCore:
         return self._builder.get_render_function().__code__
 
     async def arender(self, context: Context) -> str:
-        return await eval(self._arender_code, context.copy())
+        return await eval(self._arender_code, copy(context))
 
 
 class Template(TemplateCore):
