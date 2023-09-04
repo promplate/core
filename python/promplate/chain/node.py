@@ -1,6 +1,5 @@
-from abc import ABC, abstractmethod
 from inspect import iscoroutinefunction
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Protocol
 
 from promplate.llm.base import *
 from promplate.prompt import ChatTemplate, Template
@@ -23,22 +22,20 @@ AsyncPostProcess = (
 )
 
 
-class AbstractChain(ABC):
-    @abstractmethod
+class AbstractChain(Protocol):
     def run(
         self,
         context: Context,
         complete: Complete | None = None,
     ) -> Context:
-        pass
+        ...
 
-    @abstractmethod
     async def arun(
         self,
         context: Context,
         complete: Complete | AsyncComplete | None = None,
     ) -> Context:
-        pass
+        ...
 
     complete: Complete | AsyncComplete | None
 
@@ -143,12 +140,10 @@ class Node(AbstractChain):
         return context
 
     def next(self, chain: AbstractChain):
-        if isinstance(chain, Node):
-            return Chain(self, chain)
-        elif isinstance(chain, Chain):
+        if isinstance(chain, Chain):
             return Chain(self, *chain)
         else:
-            raise NotImplementedError
+            return Chain(self, chain)
 
     def __add__(self, chain: AbstractChain):
         return self.next(chain)

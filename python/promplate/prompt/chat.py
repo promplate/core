@@ -41,8 +41,8 @@ def parse_chat_markup(text: str) -> list[Message]:
 
 
 class ChatTemplate(Template):
-    def render(self, context):
+    def render(self, context) -> list[Message]:
         return parse_chat_markup(super().render(context))
 
-    async def arender(self, context):
+    async def arender(self, context) -> list[Message]:
         return parse_chat_markup(await super().arender(context))

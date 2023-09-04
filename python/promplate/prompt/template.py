@@ -12,7 +12,7 @@ Context = dict[str, Any]  # globals must be a real dict
 class TemplateCore:
     """A simple template compiler, for a jinja2-like syntax."""
 
-    def __init__(self, text):
+    def __init__(self, text: str):
         """Construct a Templite with the given `text`."""
 
         self.text = text
