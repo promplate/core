@@ -9,7 +9,7 @@ from .utils import *
 Context = dict[str, Any]  # globals must be a real dict
 
 
-class TemplateCore:
+class TemplateCore(AutoNaming):
     """A simple template compiler, for a jinja2-like syntax."""
 
     def __init__(self, text: str):

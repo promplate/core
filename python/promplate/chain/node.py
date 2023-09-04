@@ -3,7 +3,7 @@ from typing import Awaitable, Callable, Protocol
 
 from promplate.llm.base import *
 from promplate.prompt import ChatTemplate, Template
-from promplate.prompt.template import Context
+from promplate.prompt.template import AutoNaming, Context
 
 from .utils import appender, count_position_parameters
 
@@ -40,7 +40,7 @@ class AbstractChain(Protocol):
     complete: Complete | AsyncComplete | None
 
 
-class Node(AbstractChain):
+class Node(AutoNaming, AbstractChain):
     def __init__(
         self,
         template: Template | ChatTemplate,
@@ -156,6 +156,9 @@ class Node(AbstractChain):
         context = await self._apply_async_pre_processes(context)
         return await self.template.arender(context)
 
+    def __str__(self):
+        return f"</{self.name}/>"
+
 
 class Chain(AbstractChain):
     def __init__(
@@ -205,6 +208,9 @@ class Chain(AbstractChain):
             return await self._arun(context, complete)
         except JumpTo as jump:
             return await jump.chain.arun(jump.context or context, complete)
+
+    def __repr__(self):
+        return " + ".join(map(str, self.nodes))
 
 
 class JumpTo(Exception):
