@@ -42,13 +42,16 @@ class AutoNaming:
     def class_name(self):
         return self.__class__.__name__
 
+    fallback_name = class_name
+
     @property
     def name(self):
-        return self._name or self.class_name
+        return self._name or self.fallback_name
 
     @name.setter
     def name(self, name):
         self._name = name
+        self._frame = None
 
     @name.deleter
     def name(self):

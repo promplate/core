@@ -110,7 +110,10 @@ class TemplateCore(AutoNaming):
 class Template(TemplateCore):
     @classmethod
     def read(cls, path: str | Path, encoding="utf-8"):
-        return cls(Path(path).read_text(encoding))
+        path = Path(path)
+        template = cls(path.read_text(encoding))
+        template.name = path.stem
+        return template
 
     @classmethod
     async def aread(cls, path: str | Path, encoding="utf-8"):
@@ -119,7 +122,10 @@ class Template(TemplateCore):
         async with open(path, encoding=encoding) as f:
             content = await f.read()
 
-        return cls(content)
+        path = Path(path)
+        template = cls(content)
+        template.name = path.stem
+        return template
 
     _client = None
 
@@ -131,8 +137,9 @@ class Template(TemplateCore):
             cls._client = Client(**kwargs)
 
         response = cls._client.get(url)
-
-        return cls(response.text)
+        template = cls(response.text)
+        template.name = Path(url).stem
+        return template
 
     _aclient = None
 
@@ -144,5 +151,6 @@ class Template(TemplateCore):
             cls._aclient = AsyncClient(**kwargs)
 
         response = await cls._aclient.get(url)
-
-        return cls(response.text)
+        template = cls(response.text)
+        template.name = Path(url).stem
+        return template
