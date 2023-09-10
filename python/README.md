@@ -12,19 +12,25 @@ I try to make the syntax compatible with `Jinja2`.
 
 - [x] (lazy) template compiling
 - [x] support any evaluatable expression inside template like `{{ [ i for i in range(n) ] }}`
+- [ ] create documentation
+- [ ] javascript implementation
 - [ ] support chains and agents
 - [ ] error handling
 - [ ] template rich printing
-- [ ] implement component syntax
-  - maybe like `{% Component arg1 arg2 kwarg1=1 kwarg2=2 %}`
-- [ ] support something like [`named slot` syntax](https://svelte.dev/docs#template-syntax-slot-slot-name-name)
-  - or maybe not _named_ slot, it can be a special **nullable parameter**
-  - a slot may be like `{% slot ~ Name %}` and it will generate `name = context.get("name")`
-  - the used component only renders once, after the end tag (a buffer seems to be unavoidable)
-  - an _elevation_ of slot statements may be the necessary and sufficient condition
+- [x] implement component syntax `{% Component * arg1 arg2 kwarg1=1 kwarg2=2 **kwargs %}`
+- [ ] allow more corner cases for the component syntax
+  - [ ] `{% Componnet arg=" * " %}`
+  - [ ] `{% Componnet arg = " * " %}`
+  - [ ] `{% Componnet arg = await f()`
+- [ ] if the outer context is a `defaultdict`, the context passing to component should be?
+  - or maybe this should be determined by the component itself
+  - because a component could be a `Node` and a `Node` can have preprocesses
 - [ ] support while loop and isolated variable declaration
 - [x] `else` and `elif` tag
 - [ ] directory based routing
 - [ ] caching (and cache-controls maybe?)
-- [ ] implement more [loaders](https://jinja.palletsprojects.com/api/#loaders)
-- [ ] multi-file chat template
+- [x] implement more [loaders](https://jinja.palletsprojects.com/api/#loaders)
+  - for now you can load template from local filesystem or web urls
+  - but component syntax only support variables from the context
+- [x] multi-file chat template
+  - using components

@@ -1,10 +1,18 @@
 [tool.poetry]
 name = "promplate"
-version = "0.1.8.4"
+version = "0.1.9"
 description = "cross-language prompt engineering framework"
+homepage = "https://promplate.dev/"
 authors = ["Muspi Merol <admin@muspimerol.site>"]
 license = "MIT"
 readme = "README.md"
+keywords = ["prompt", "template", "nlp", "llm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Markup",
+    "Typing :: Typed",
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"

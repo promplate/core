@@ -1,12 +1,20 @@
 from copy import copy
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from .builder import *
 from .utils import *
 
 Context = dict[str, Any]  # globals must be a real dict
+
+
+class Component(Protocol):
+    def render(self, context: Context) -> str:
+        ...
+
+    async def arender(self, context: Context) -> str:
+        ...
 
 
 class TemplateCore(AutoNaming):
@@ -40,7 +48,7 @@ class TemplateCore(AutoNaming):
     def _on_comment_token(self, _):
         pass  # TODO: remove blank line
 
-    def _on_special_token(self, token):
+    def _on_special_token(self, token, sync: bool):
         inner: str = self._unwrap_token(token)
 
         if inner.startswith("end"):
@@ -65,7 +73,24 @@ class TemplateCore(AutoNaming):
                 self._builder.indent()
 
             else:
-                raise NotImplementedError(op)
+                arguments: str = self._make_context(inner)
+                if sync:
+                    self._buffer.append(f"{op}.render({arguments})")
+                else:
+                    self._buffer.append(f"await {op}.arender({arguments})")
+
+    @staticmethod
+    def _make_context(text: str):
+        pairs = []
+        for token in text.split(" ")[1:]:
+            if token == "*":
+                pairs.append("**locals()")
+            elif "=" in token or token.startswith("**"):
+                pairs.append(token)
+            else:
+                pairs.append(f"{token}={token}")
+
+        return f"dict({', '.join(pairs)})"
 
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)
@@ -78,7 +103,7 @@ class TemplateCore(AutoNaming):
             if s_token.startswith("{{"):
                 self._on_eval_token(token)
             elif s_token.startswith("{%"):
-                self._on_special_token(token)
+                self._on_special_token(token, sync)
             else:
                 assert s_token.startswith("{#")
                 self._on_comment_token(token)
