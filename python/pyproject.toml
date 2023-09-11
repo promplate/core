@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "promplate"
-version = "0.1.9"
+version = "0.1.9.1"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
+repository = "https://github.com/promplate/core"
 authors = ["Muspi Merol <admin@muspimerol.site>"]
 license = "MIT"
 readme = "README.md"
@@ -17,8 +18,8 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 aiofiles = "^23.2"
-httpx = "^0.24"
-openai = "^0.27"
+httpx = ">=0.24, <1.0"
+openai = ">=0.27, <1.0"
 
 
 [build-system]
