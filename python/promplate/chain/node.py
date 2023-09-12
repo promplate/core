@@ -40,7 +40,43 @@ class AbstractChain(Protocol):
     complete: Complete | AsyncComplete | None
 
 
-class Node(AutoNaming, AbstractChain):
+class Interruptable(AbstractChain, Protocol):
+    def _run(
+        self,
+        context: Context,
+        complete: Complete | None = None,
+    ) -> Context:
+        ...
+
+    async def _arun(
+        self,
+        context: Context,
+        complete: Complete | AsyncComplete | None = None,
+    ) -> Context:
+        ...
+
+    def run(self, context, complete=None) -> Context:
+        complete = complete or self.complete
+        try:
+            return self._run(context, complete)
+        except JumpTo as jump:
+            if jump.target is None or jump.target is self:
+                return jump.chain.run(jump.context or context, complete)
+            else:
+                raise jump from None
+
+    async def arun(self, context, complete=None) -> Context:
+        complete = complete or self.complete
+        try:
+            return await self._arun(context, complete)
+        except JumpTo as jump:
+            if jump.target is None or jump.target is self:
+                return await jump.chain.arun(jump.context or context, complete)
+            else:
+                raise jump from None
+
+
+class Node(AutoNaming, Interruptable):
     def __init__(
         self,
         template: Template | ChatTemplate,
@@ -84,7 +120,7 @@ class Node(AutoNaming, AbstractChain):
 
         return context
 
-    def run(self, context, complete=None):
+    def _run(self, context, complete=None):
         complete = complete or self.complete
         assert complete is not None
 
@@ -121,7 +157,7 @@ class Node(AutoNaming, AbstractChain):
 
         return context
 
-    async def arun(self, context, complete=None):
+    async def _arun(self, context, complete=None):
         complete = complete or self.complete
         assert complete is not None
 
@@ -160,7 +196,7 @@ class Node(AutoNaming, AbstractChain):
         return f"</{self.name}/>"
 
 
-class Chain(AbstractChain):
+class Chain(Interruptable):
     def __init__(
         self,
         *nodes: AbstractChain,
@@ -183,37 +219,32 @@ class Chain(AbstractChain):
     def __iter__(self):
         return iter(self.nodes)
 
-    def _run(self, context, complete):
+    def _run(self, context, complete=None):
         for node in self.nodes:
             context = node.run(context, node.complete or complete)
 
         return context
 
-    def run(self, context, complete=None):
-        complete = complete or self.complete
-        try:
-            return self._run(context, complete)
-        except JumpTo as jump:
-            return jump.chain.run(jump.context or context, complete)
-
-    async def _arun(self, context, complete):
+    async def _arun(self, context, complete=None):
         for node in self.nodes:
             context = await node.arun(context, node.complete or complete)
 
         return context
-
-    async def arun(self, context, complete=None):
-        complete = complete or self.complete
-        try:
-            return await self._arun(context, complete)
-        except JumpTo as jump:
-            return await jump.chain.arun(jump.context or context, complete)
 
     def __repr__(self):
         return " + ".join(map(str, self.nodes))
 
 
 class JumpTo(Exception):
-    def __init__(self, chain: Node | Chain, context: Context | None = None):
+    def __init__(
+        self,
+        chain: Interruptable,
+        context: Context | None = None,
+        target: Interruptable | None = None,
+    ):
         self.chain = chain
         self.context = context
+        self.target = target
+
+    def __str__(self) -> str:
+        return f"{self.target} does not exist in the hierarchy"
