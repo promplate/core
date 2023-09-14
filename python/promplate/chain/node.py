@@ -2,7 +2,7 @@ from inspect import iscoroutinefunction
 from typing import Awaitable, Callable, Protocol
 
 from promplate.llm.base import *
-from promplate.prompt import ChatTemplate, Template
+from promplate.prompt import Template
 from promplate.prompt.template import AutoNaming, Context
 
 from .utils import appender, count_position_parameters
@@ -79,7 +79,7 @@ class Interruptable(AbstractChain, Protocol):
 class Node(AutoNaming, Interruptable):
     def __init__(
         self,
-        template: Template | ChatTemplate,
+        template: Template,
         pre_processes: list[PreProcess | AsyncPreProcess] | None = None,
         post_processes: list[PostProcess | AsyncPostProcess] | None = None,
         complete: Complete | AsyncComplete | None = None,
@@ -127,8 +127,6 @@ class Node(AutoNaming, Interruptable):
         context = self._apply_pre_processes(context)
         prompt = self.template.render(context)
 
-        assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
-
         result = context["__result__"] = complete(prompt, **self.run_config)
 
         context = self._apply_post_processes(context, result)
@@ -163,8 +161,6 @@ class Node(AutoNaming, Interruptable):
 
         context = await self._apply_async_pre_processes(context)
         prompt = await self.template.arender(context)
-
-        assert isinstance(self.template, ChatTemplate) ^ isinstance(prompt, str)
 
         if iscoroutinefunction(complete):
             result = context["__result__"] = await complete(prompt, **self.run_config)
