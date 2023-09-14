@@ -10,7 +10,7 @@ def text_complete(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> CompleteText: ...
+) -> Complete: ...
 def async_text_complete(
     *,
     model: str,
@@ -21,7 +21,7 @@ def async_text_complete(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> AsyncCompleteText: ...
+) -> AsyncComplete: ...
 def text_generate(
     *,
     model: str,
@@ -32,7 +32,7 @@ def text_generate(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> GenerateText: ...
+) -> Generate: ...
 def async_text_generate(
     *,
     model: str,
@@ -43,7 +43,7 @@ def async_text_generate(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> AsyncGenerateText: ...
+) -> AsyncGenerate: ...
 def chat_complete(
     *,
     model: str,
@@ -54,7 +54,7 @@ def chat_complete(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> CompleteChat: ...
+) -> Complete: ...
 def async_chat_complete(
     *,
     model: str,
@@ -65,7 +65,7 @@ def async_chat_complete(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> AsyncCompleteChat: ...
+) -> AsyncComplete: ...
 def chat_generate(
     *,
     model: str,
@@ -76,7 +76,7 @@ def chat_generate(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> GenerateChat: ...
+) -> Generate: ...
 def async_chat_generate(
     *,
     model: str,
@@ -87,4 +87,4 @@ def async_chat_generate(
     api_key: str | None = None,
     api_base: str | None = None,
     **other_config,
-) -> AsyncGenerateChat: ...
+) -> AsyncGenerate: ...
