@@ -2,8 +2,7 @@ from inspect import iscoroutinefunction
 from typing import Awaitable, Callable, Protocol
 
 from promplate.llm.base import *
-from promplate.prompt import Template
-from promplate.prompt.template import AutoNaming, Context
+from promplate.prompt.template import Context, Loader, Template
 
 from .utils import appender, count_position_parameters
 
@@ -76,16 +75,16 @@ class Interruptable(AbstractChain, Protocol):
                 raise jump from None
 
 
-class Node(AutoNaming, Interruptable):
+class Node(Loader, Interruptable):
     def __init__(
         self,
-        template: Template,
+        template: Template | str,
         pre_processes: list[PreProcess | AsyncPreProcess] | None = None,
         post_processes: list[PostProcess | AsyncPostProcess] | None = None,
         complete: Complete | AsyncComplete | None = None,
         **config,
     ):
-        self.template = template
+        self.template = Template(template) if isinstance(template, str) else template
         self.pre_processes = pre_processes or []
         self.post_processes = post_processes or []
         self.complete = complete

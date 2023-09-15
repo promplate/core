@@ -12,22 +12,22 @@ class Configurable:
 
 
 class Complete(Protocol):
-    def __call__(self, text: str, /, **config) -> str:
+    def __call__(self, prompt, /, **config) -> str:
         ...
 
 
 class Generate(Protocol):
-    def __call__(self, text: str, /, **config) -> Iterable[str]:
+    def __call__(self, prompt, /, **config) -> Iterable[str]:
         ...
 
 
 class AsyncComplete(Protocol):
-    def __call__(self, text: str, /, **config) -> Awaitable[str]:
+    def __call__(self, prompt, /, **config) -> Awaitable[str]:
         ...
 
 
 class AsyncGenerate(Protocol):
-    def __call__(self, text: str, /, **config) -> AsyncIterable[str]:
+    def __call__(self, prompt, /, **config) -> AsyncIterable[str]:
         ...
 
 

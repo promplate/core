@@ -16,21 +16,21 @@ openai.app_info = {
 
 
 class TextComplete(Configurable, Complete):
-    def __call__(self, text, /, **config):
+    def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": False, "prompt": text}
         result = Completion.create(**config)
         return result["choices"][0]["text"]
 
 
 class AsyncTextComplete(Configurable, AsyncComplete):
-    async def __call__(self, text, /, **config):
+    async def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": False, "prompt": text}
         result = await Completion.acreate(**config)
         return result["choices"][0]["text"]
 
 
 class TextGenerate(Configurable, Generate):
-    def __call__(self, text, /, **config):
+    def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": True, "prompt": text}
         stream = Completion.create(**config)
         for event in stream:
@@ -38,7 +38,7 @@ class TextGenerate(Configurable, Generate):
 
 
 class AsyncTextGenerate(Configurable, AsyncGenerate):
-    async def __call__(self, text, /, **config):
+    async def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": True, "prompt": text}
         stream = await Completion.acreate(**config)
         async for event in stream:

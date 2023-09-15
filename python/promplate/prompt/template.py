@@ -132,13 +132,13 @@ class TemplateCore(AutoNaming):
         return await eval(self._arender_code, copy(context))
 
 
-class Template(TemplateCore):
+class Loader(AutoNaming):
     @classmethod
     def read(cls, path: str | Path, encoding="utf-8"):
         path = Path(path)
-        template = cls(path.read_text(encoding))
-        template.name = path.stem
-        return template
+        obj = cls(path.read_text(encoding))
+        obj.name = path.stem
+        return obj
 
     @classmethod
     async def aread(cls, path: str | Path, encoding="utf-8"):
@@ -148,9 +148,9 @@ class Template(TemplateCore):
             content = await f.read()
 
         path = Path(path)
-        template = cls(content)
-        template.name = path.stem
-        return template
+        obj = cls(content)
+        obj.name = path.stem
+        return obj
 
     _client = None
 
@@ -162,9 +162,9 @@ class Template(TemplateCore):
             cls._client = Client(**kwargs)
 
         response = cls._client.get(url)
-        template = cls(response.text)
-        template.name = Path(url).stem
-        return template
+        obj = cls(response.text)
+        obj.name = Path(url).stem
+        return obj
 
     _aclient = None
 
@@ -176,6 +176,10 @@ class Template(TemplateCore):
             cls._aclient = AsyncClient(**kwargs)
 
         response = await cls._aclient.get(url)
-        template = cls(response.text)
-        template.name = Path(url).stem
-        return template
+        obj = cls(response.text)
+        obj.name = Path(url).stem
+        return obj
+
+
+class Template(TemplateCore, Loader):
+    pass
