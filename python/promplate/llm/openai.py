@@ -1,4 +1,5 @@
 from importlib.metadata import metadata
+from typing import TYPE_CHECKING, Any
 
 import openai
 from openai import ChatCompletion, Completion
@@ -15,99 +16,112 @@ openai.app_info = {
 }
 
 
-class TextComplete(Configurable, Complete):
+if TYPE_CHECKING:
+
+    class Config(Configurable):
+        def __init__(
+            self,
+            model: str,
+            temperature: float | int | None = None,
+            top_p: float | int | None = None,
+            stop: str | list[str] | None = None,
+            max_tokens: int | None = None,
+            api_key: str | None = None,
+            api_base: str | None = None,
+            **other_config,
+        ):
+            self.model = model
+            self.temperature = temperature
+            self.top_p = top_p
+            self.stop = stop
+            self.max_tokens = max_tokens
+            self.api_key = api_key
+            self.api_base = api_base
+
+            for key, val in other_config.items():
+                setattr(self, key, val)
+
+        def __setattr__(self, *_):
+            ...
+
+        def __getattr__(self, _):
+            ...
+
+else:
+    Config = Configurable
+
+
+class TextComplete(Config, Complete):
     def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": False, "prompt": text}
-        result = Completion.create(**config)
+        result: Any = Completion.create(**config)
         return result["choices"][0]["text"]
 
 
-class AsyncTextComplete(Configurable, AsyncComplete):
+class AsyncTextComplete(Config, AsyncComplete):
     async def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": False, "prompt": text}
-        result = await Completion.acreate(**config)
+        result: Any = await Completion.acreate(**config)
         return result["choices"][0]["text"]
 
 
-class TextGenerate(Configurable, Generate):
+class TextGenerate(Config, Generate):
     def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": True, "prompt": text}
-        stream = Completion.create(**config)
+        stream: Any = Completion.create(**config)
         for event in stream:
             yield event["choices"][0]["text"]
 
 
-class AsyncTextGenerate(Configurable, AsyncGenerate):
+class AsyncTextGenerate(Config, AsyncGenerate):
     async def __call__(self, text: str, /, **config):
         config = self._config | config | {"stream": True, "prompt": text}
-        stream = await Completion.acreate(**config)
+        stream: Any = await Completion.acreate(**config)
         async for event in stream:
             yield event["choices"][0]["text"]
 
 
-class ChatComplete(Configurable, Complete):
+class ChatComplete(Config, Complete):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._config | config | {"stream": False, "messages": messages}
-        result = ChatCompletion.create(**config)
+        result: Any = ChatCompletion.create(**config)
         return result["choices"][0]["message"]["content"]
 
 
-class AsyncChatComplete(Configurable, AsyncComplete):
+class AsyncChatComplete(Config, AsyncComplete):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._config | config | {"stream": False, "messages": messages}
-        result = await ChatCompletion.acreate(**config)
+        result: Any = await ChatCompletion.acreate(**config)
         return result["choices"][0]["message"]["content"]
 
 
-class ChatGenerate(Configurable, Generate):
+class ChatGenerate(Config, Generate):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._config | config | {"stream": True, "messages": messages}
-        stream = ChatCompletion.create(**config)
+        stream: Any = ChatCompletion.create(**config)
         for event in stream:
             delta: dict = event["choices"][0]["delta"]
             yield delta.get("content", "")
 
 
-class AsyncChatGenerate(Configurable, AsyncGenerate):
+class AsyncChatGenerate(Config, AsyncGenerate):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._config | config | {"stream": True, "messages": messages}
-        stream = await ChatCompletion.acreate(**config)
+        stream: Any = await ChatCompletion.acreate(**config)
         async for event in stream:
             delta: dict = event["choices"][0]["delta"]
             yield delta.get("content", "")
 
 
-def text_complete(**default_config):
-    return TextComplete(**default_config)
-
-
-def async_text_complete(**default_config):
-    return AsyncTextComplete(**default_config)
-
-
-def text_generate(**default_config):
-    return TextGenerate(**default_config)
-
-
-def async_text_generate(**default_config):
-    return AsyncTextGenerate(**default_config)
-
-
-def chat_complete(**default_config):
-    return ChatComplete(**default_config)
-
-
-def async_chat_complete(**default_config):
-    return AsyncChatComplete(**default_config)
-
-
-def chat_generate(**default_config):
-    return ChatGenerate(**default_config)
-
-
-def async_chat_generate(**default_config):
-    return AsyncChatGenerate(**default_config)
+text_complete = TextComplete
+text_generate = TextGenerate
+chat_complete = ChatComplete
+chat_generate = ChatGenerate
+async_text_complete = AsyncTextComplete
+async_text_generate = AsyncTextGenerate
+async_chat_complete = AsyncChatComplete
+async_chat_generate = AsyncChatGenerate
