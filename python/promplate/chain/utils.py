@@ -1,4 +1,5 @@
-from inspect import Parameter, signature
+from inspect import Parameter, isawaitable, signature
+from typing import Awaitable, TypeVar
 
 
 def appender(to_append: list):
@@ -16,3 +17,13 @@ def is_positional_parameter(p: Parameter):
 
 def count_position_parameters(func):
     return sum(map(is_positional_parameter, signature(func).parameters.values()))
+
+
+T = TypeVar("T")
+
+
+async def resolve(maybe_awaitable: T | Awaitable[T], /) -> T:
+    while isawaitable(maybe_awaitable):
+        maybe_awaitable = await maybe_awaitable
+
+    return maybe_awaitable  # type: ignore

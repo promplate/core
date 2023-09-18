@@ -1,10 +1,9 @@
-from inspect import iscoroutinefunction
 from typing import Awaitable, Callable, Protocol
 
 from promplate.llm.base import *
 from promplate.prompt.template import Context, Loader, Template
 
-from .utils import appender, count_position_parameters
+from .utils import appender, count_position_parameters, resolve
 
 PostProcessReturns = Context | None | tuple[Context | None, str]
 
@@ -134,20 +133,13 @@ class Node(Loader, Interruptable):
 
     async def _apply_async_pre_processes(self, context: Context):
         for process in self.pre_processes:
-            if iscoroutinefunction(process):
-                context = await process(context) or context
-            else:
-                context = process(context) or context
+            context = await resolve(process(context)) or context
 
         return context
 
     async def _apply_async_post_processes(self, context: Context, result):
         for process in self.post_processes:
-            if iscoroutinefunction(process):
-                ret = await self._via(process, context, result)
-            else:
-                ret = self._via(process, context, result)
-
+            ret = await resolve(self._via(process, context, result))
             if isinstance(ret, tuple):
                 ret, result = ret
             context = ret or context
@@ -161,10 +153,9 @@ class Node(Loader, Interruptable):
         context = await self._apply_async_pre_processes(context)
         prompt = await self.template.arender(context)
 
-        if iscoroutinefunction(complete):
-            result = context["__result__"] = await complete(prompt, **self.run_config)
-        else:
-            result = context["__result__"] = complete(prompt, **self.run_config)
+        result = context["__result__"] = await resolve(
+            complete(prompt, **self.run_config)
+        )
 
         context = await self._apply_async_post_processes(context, result)
 
