@@ -29,11 +29,3 @@ class AsyncComplete(Protocol):
 class AsyncGenerate(Protocol):
     def __call__(self, prompt, /, **config) -> AsyncIterable[str]:
         ...
-
-
-# Backward compatibility
-
-CompleteText = CompleteChat = Complete
-GenerateText = GenerateChat = Generate
-AsyncCompleteText = AsyncCompleteChat = AsyncComplete
-AsyncGenerateText = AsyncGenerateChat = AsyncGenerate

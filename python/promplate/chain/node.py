@@ -1,8 +1,7 @@
 from typing import Awaitable, Callable, Protocol
 
-from promplate.llm.base import *
-from promplate.prompt.template import Context, Loader, Template
-
+from ..llm.base import *
+from ..prompt.template import Context, Loader, Template
 from .utils import appender, count_position_parameters, resolve
 
 PostProcessReturns = Context | None | tuple[Context | None, str]

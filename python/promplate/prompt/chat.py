@@ -1,6 +1,5 @@
 from typing import Literal, TypedDict
 
-from .template import Template
 from .utils import is_message_start
 
 Message = TypedDict(
@@ -8,6 +7,14 @@ Message = TypedDict(
     {"role": Literal["user", "assistant", "system"], "content": str, "name": str},
     total=False,
 )
+
+
+def ensure(text_or_list: list[Message] | str) -> list[Message]:
+    return (
+        parse_chat_markup(text_or_list)
+        if isinstance(text_or_list, str)
+        else text_or_list
+    )
 
 
 def parse_chat_markup(text: str) -> list[Message]:
@@ -38,11 +45,3 @@ def parse_chat_markup(text: str) -> list[Message]:
         messages.append(current_message)
 
     return messages or [{"role": "user", "content": text}]
-
-
-class ChatTemplate(Template):
-    def render(self, context) -> list[Message]:
-        return parse_chat_markup(super().render(context))
-
-    async def arender(self, context) -> list[Message]:
-        return parse_chat_markup(await super().arender(context))

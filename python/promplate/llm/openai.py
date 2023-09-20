@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any
 import openai
 from openai import ChatCompletion, Completion
 
+from ..prompt.chat import Message, ensure
 from .base import *
-from .utils import Message, ensure
 
 meta = metadata("promplate")
 
@@ -115,13 +115,3 @@ class AsyncChatGenerate(Config, AsyncGenerate):
         async for event in stream:
             delta: dict = event["choices"][0]["delta"]
             yield delta.get("content", "")
-
-
-text_complete = TextComplete
-text_generate = TextGenerate
-chat_complete = ChatComplete
-chat_generate = ChatGenerate
-async_text_complete = AsyncTextComplete
-async_text_generate = AsyncTextGenerate
-async_chat_complete = AsyncChatComplete
-async_chat_generate = AsyncChatGenerate
