@@ -3,35 +3,50 @@ from typing import Any, Callable, Mapping, MutableMapping, Self, TypeVar
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, Template
-from .utils import appender, count_position_parameters, resolve
+from .utils import appender, resolve
 
 
 class ChainContext(ChainMap, dict):
     def __init__(self, *maps: MutableMapping[Any, Any] | None):
-        super().__init__(*(m for m in maps if m is not None))
+        super().__init__(
+            *sum(
+                (
+                    m.maps if isinstance(m, ChainContext) else [m]
+                    for m in maps
+                    if m is not None
+                ),
+                [],
+            )
+        )
 
     @property
     def result(self):
         return self.__getitem__("__result__")
 
+    @result.setter
+    def result(self, result):
+        self.__setitem__("__result__", result)
+
+    @result.deleter
+    def result(self):
+        self.__delitem__("__result__")
+
     def __or__(self, other: Mapping | None) -> Self:
         return self if other is None or other is self else super().__or__(other)
+
+    def __ior__(self, other: Mapping | None) -> Self:
+        if other is not None or other is not self:
+            assert isinstance(other, Mapping)
+            self.update(other)
+        return self
 
 
 CTX = TypeVar("CTX", Context, ChainContext)
 
-PostProcessReturns = CTX | None | tuple[CTX | None, str]
 
-PreProcess = Callable[[CTX], CTX]
-PostProcess = (
-    Callable[[CTX], PostProcessReturns] | Callable[[CTX, str], PostProcessReturns]
-)
+Process = Callable[[CTX], CTX | None]
 
-AsyncPreProcess = Callable[[CTX], Awaitable[CTX]]
-AsyncPostProcess = (
-    Callable[[CTX], Awaitable[PostProcessReturns]]
-    | Callable[[CTX, str], Awaitable[PostProcessReturns]]
-)
+AsyncProcess = Callable[[CTX], Awaitable[CTX | None]]
 
 
 class AbstractChain(Protocol):
@@ -75,7 +90,6 @@ class Interruptable(AbstractChain, Protocol):
 
     def run(self, context=None, /, complete=None):
         context = ChainContext(self.partial_context, context)
-        complete = complete or self.complete
         try:
             return self._run(context, complete)
         except JumpTo as jump:
@@ -86,7 +100,6 @@ class Interruptable(AbstractChain, Protocol):
 
     async def arun(self, context=None, /, complete=None):
         context = ChainContext(self.partial_context, context)
-        complete = complete or self.complete
         try:
             return await self._arun(context, complete)
         except JumpTo as jump:
@@ -101,8 +114,8 @@ class Node(Loader, Interruptable):
         self,
         template: Template | str,
         partial_context: Context | None = None,
-        pre_processes: list[PreProcess | AsyncPreProcess] | None = None,
-        post_processes: list[PostProcess | AsyncPostProcess] | None = None,
+        pre_processes: list[Process | AsyncProcess] | None = None,
+        post_processes: list[Process | AsyncProcess] | None = None,
         complete: Complete | AsyncComplete | None = None,
         **config,
     ):
@@ -121,65 +134,45 @@ class Node(Loader, Interruptable):
     def post_process(self):
         return appender(self.post_processes)
 
-    @staticmethod
-    def _via(process: PostProcess | AsyncPostProcess, context: ChainContext, result):
-        if count_position_parameters(process) == 1:
-            return process(context)
-        else:
-            return process(context, result)
-
-    def _apply_pre_processes(self, context: CTX) -> CTX:
+    def _apply_pre_processes(self, context):
         for process in self.pre_processes:
             context |= process(context)
-        return context
 
-    def _apply_post_processes(self, context: CTX, result) -> CTX:
+    def _apply_post_processes(self, context):
         for process in self.post_processes:
-            ret = self._via(process, context, result)
-            if isinstance(ret, tuple):
-                ret, result = ret
-            context |= ret
-        return context
+            context |= process(context)
 
     def _run(self, context, /, complete=None):
-        complete = complete or self.complete
+        complete = self.complete or complete
         assert complete is not None
 
-        context = self._apply_pre_processes(context)
+        self._apply_pre_processes(context)
         prompt = self.template.render(context)
 
-        result = context["__result__"] = complete(prompt, **self.run_config)
+        context.result = complete(prompt, **self.run_config)
 
-        context = self._apply_post_processes(context, result)
+        self._apply_post_processes(context)
 
         return context
 
-    async def _apply_async_pre_processes(self, context: CTX) -> CTX:
+    async def _apply_async_pre_processes(self, context):
         for process in self.pre_processes:
             context |= await resolve(process(context))
-        return context
 
-    async def _apply_async_post_processes(self, context: CTX, result) -> CTX:
+    async def _apply_async_post_processes(self, context):
         for process in self.post_processes:
-            ret = await resolve(self._via(process, context, result))
-            if isinstance(ret, tuple):
-                ret, result = ret
-            context |= ret
-        return context
+            context |= await resolve(process(context))
 
     async def _arun(self, context, /, complete=None):
-        complete = complete or self.complete
+        complete = self.complete or complete
         assert complete is not None
-        context = ChainContext(context, self.partial_context)
 
-        context = await self._apply_async_pre_processes(context)
+        await self._apply_async_pre_processes(context)
         prompt = await self.template.arender(context)
 
-        result = context["__result__"] = await resolve(
-            complete(prompt, **self.run_config)
-        )
+        context.result = await resolve(complete(prompt, **self.run_config))
 
-        context = await self._apply_async_post_processes(context, result)
+        await self._apply_async_post_processes(context)
 
         return context
 
@@ -194,12 +187,12 @@ class Node(Loader, Interruptable):
 
     def render(self, context: Context):
         context = ChainContext(context, self.partial_context)
-        context = self._apply_pre_processes(context)
+        self._apply_pre_processes(context)
         return self.template.render(context)
 
     async def arender(self, context: Context):
         context = ChainContext(context, self.partial_context)
-        context = await self._apply_async_pre_processes(context)
+        await self._apply_async_pre_processes(context)
         return await self.template.arender(context)
 
     def __str__(self):
@@ -233,13 +226,13 @@ class Chain(Interruptable):
 
     def _run(self, context, /, complete=None):
         for node in self.nodes:
-            context = node.run(context, node.complete or complete)
+            context = node.run(context, self.complete or complete)
 
         return context
 
     async def _arun(self, context, /, complete=None):
         for node in self.nodes:
-            context = await node.arun(context, node.complete or complete)
+            context = await node.arun(context, self.complete or complete)
 
         return context
 
