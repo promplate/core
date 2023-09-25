@@ -35,7 +35,7 @@ class ChainContext(ChainMap, dict):
         return self if other is None or other is self else super().__or__(other)
 
     def __ior__(self, other: Mapping | None) -> Self:
-        if other is not None or other is not self:
+        if other is not None and other is not self:
             assert isinstance(other, Mapping)
             self.update(other)
         return self
@@ -88,7 +88,7 @@ class Interruptable(AbstractChain, Protocol):
     ) -> ChainContext:
         ...
 
-    def run(self, context=None, /, complete=None):
+    def run(self, context=None, /, complete=None) -> ChainContext:
         context = ChainContext(self.partial_context, context)
         try:
             return self._run(context, complete)
@@ -98,7 +98,7 @@ class Interruptable(AbstractChain, Protocol):
             else:
                 raise jump from None
 
-    async def arun(self, context=None, /, complete=None):
+    async def arun(self, context=None, /, complete=None) -> ChainContext:
         context = ChainContext(self.partial_context, context)
         try:
             return await self._arun(context, complete)
