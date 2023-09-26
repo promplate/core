@@ -1,5 +1,5 @@
 from collections import ChainMap
-from typing import Any, Callable, Mapping, MutableMapping, Self, TypeVar
+from typing import Any, Callable, Mapping, MutableMapping, TypeVar
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, Template
@@ -31,13 +31,22 @@ class ChainContext(ChainMap, dict):
     def result(self):
         self.__delitem__("__result__")
 
-    def __or__(self, other: Mapping | None) -> Self:
-        return self if other is None or other is self else super().__or__(other)
+    def __or__(self, other: Mapping | None) -> "ChainContext":
+        if other is None or other is self:
+            return self
 
-    def __ior__(self, other: Mapping | None) -> Self:
+        if type(other) is not dict and isinstance(other, MutableMapping):
+            return ChainContext(other, *self.maps)
+
+        return super().__or__(other)
+
+    def __ior__(self, other: MutableMapping | None) -> "ChainContext":
         if other is not None and other is not self:
-            assert isinstance(other, Mapping)
-            self.update(other)
+            if type(other) is dict:
+                self.update(other)
+            else:
+                assert isinstance(other, MutableMapping)
+                self.maps.insert(0, other)
         return self
 
 
@@ -66,7 +75,7 @@ class AbstractChain(Protocol):
     ) -> ChainContext:
         ...
 
-    partial_context: Context | None
+    context: Context | None
 
     complete: Complete | AsyncComplete | None
 
@@ -89,7 +98,7 @@ class Interruptable(AbstractChain, Protocol):
         ...
 
     def run(self, context=None, /, complete=None) -> ChainContext:
-        context = ChainContext(self.partial_context, context)
+        context = ChainContext(self.context, context)
         try:
             return self._run(context, complete)
         except JumpTo as jump:
@@ -99,7 +108,7 @@ class Interruptable(AbstractChain, Protocol):
                 raise jump from None
 
     async def arun(self, context=None, /, complete=None) -> ChainContext:
-        context = ChainContext(self.partial_context, context)
+        context = ChainContext(self.context, context)
         try:
             return await self._arun(context, complete)
         except JumpTo as jump:
@@ -120,7 +129,7 @@ class Node(Loader, Interruptable):
         **config,
     ):
         self.template = Template(template) if isinstance(template, str) else template
-        self.partial_context = partial_context
+        self.context = partial_context
         self.pre_processes = pre_processes or []
         self.post_processes = post_processes or []
         self.complete = complete
@@ -186,12 +195,12 @@ class Node(Loader, Interruptable):
         return self.next(chain)
 
     def render(self, context: Context):
-        context = ChainContext(context, self.partial_context)
+        context = ChainContext(context, self.context)
         self._apply_pre_processes(context)
         return self.template.render(context)
 
     async def arender(self, context: Context):
-        context = ChainContext(context, self.partial_context)
+        context = ChainContext(context, self.context)
         await self._apply_async_pre_processes(context)
         return await self.template.arender(context)
 
@@ -206,8 +215,8 @@ class Chain(Interruptable):
         partial_context: Context | None = None,
         complete: Complete | AsyncComplete | None = None,
     ):
-        self.nodes = list(nodes)
-        self.partial_context = partial_context
+        self.nodes = nodes
+        self.context = partial_context
         self.complete = complete
 
     def next(self, chain: AbstractChain):

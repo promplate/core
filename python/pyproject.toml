@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.2.0.1"
+version = "0.2.1"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
 repository = "https://github.com/promplate/core"
@@ -17,9 +17,15 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-aiofiles = "^23.2"
-httpx = ">=0.24, <1.0"
-openai = ">=0.27, <1.0"
+aiofiles = { version = "^23.2", optional = true }
+httpx = { version = ">=0.24, <1.0", optional = true }
+openai = { version = ">=0.27, <1.0", optional = true }
+
+[tool.poetry.extras]
+aiofiles = ["aiofiles"]
+httpx = ["httpx"]
+openai = ["openai"]
+all = ["aiofiles", "httpx", "openai"]
 
 
 [build-system]
