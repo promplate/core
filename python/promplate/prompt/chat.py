@@ -1,12 +1,12 @@
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 from .utils import is_message_start
 
-Message = TypedDict(
-    "Message",
-    {"role": Literal["user", "assistant", "system"], "content": str, "name": str},
-    total=False,
-)
+
+class Message(TypedDict):
+    role: Literal["user", "assistant", "system"]
+    content: str
+    name: NotRequired[str]
 
 
 def ensure(text_or_list: list[Message] | str) -> list[Message]:
