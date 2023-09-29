@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.2.1.1"
+version = "0.2.2"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
 repository = "https://github.com/promplate/core"
