@@ -121,8 +121,7 @@ class Interruptable(AbstractChain, Protocol):
     def run(self, context=None, /, complete=None) -> ChainContext:
         context = ChainContext(context, self.context)
         try:
-            self._run(context, complete)
-            return context
+            return self._run(context, complete) or context
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
                 return jump.chain.run(context | jump.context, complete)
@@ -132,8 +131,7 @@ class Interruptable(AbstractChain, Protocol):
     async def arun(self, context=None, /, complete=None) -> ChainContext:
         context = ChainContext(context, self.context)
         try:
-            await self._arun(context, complete)
-            return context
+            return await self._arun(context, complete) or context
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
                 return await jump.chain.arun(context | jump.context, complete)
