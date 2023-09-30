@@ -9,7 +9,10 @@ from .base import *
 
 meta = metadata("promplate")
 
-openai.app_info = {
+if openai.api_key is None:
+    openai.api_key = ""
+
+openai.app_info = (openai.app_info or {}) | {
     "name": "Promplate",
     "version": meta["version"],
     "url": meta["home-page"],
