@@ -213,12 +213,12 @@ class Node(Loader, Interruptable):
     def __add__(self, chain: AbstractChain):
         return self.next(chain)
 
-    def render(self, context: Context):
+    def render(self, context: Context | None = None):
         context = ChainContext(context, self.context)
         self._apply_pre_processes(context)
         return self.template.render(context)
 
-    async def arender(self, context: Context):
+    async def arender(self, context: Context | None = None):
         context = ChainContext(context, self.context)
         await self._apply_async_pre_processes(context)
         return await self.template.arender(context)
