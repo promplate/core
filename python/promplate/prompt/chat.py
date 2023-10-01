@@ -1,12 +1,28 @@
-from typing import Literal, NotRequired, TypedDict
+from sys import version_info
+from typing import Literal, TypedDict
 
 from .utils import is_message_start
 
+if version_info >= (3, 11):
+    from typing import NotRequired
 
-class Message(TypedDict):
-    role: Literal["user", "assistant", "system"]
-    content: str
-    name: NotRequired[str]
+    class Message(TypedDict):
+        role: Literal["user", "assistant", "system"]
+        content: str
+        name: NotRequired[str]
+
+else:
+
+    class MessageWithoutName(TypedDict):
+        role: Literal["user", "assistant", "system"]
+        content: str
+
+    class MessageWithName(MessageWithoutName):
+        name: str
+
+    Message = MessageWithoutName | MessageWithName  # type: ignore
+
+    del MessageWithoutName, MessageWithName
 
 
 def ensure(text_or_list: list[Message] | str) -> list[Message]:
