@@ -1,5 +1,4 @@
 from collections import ChainMap
-from re import X
 from typing import Any, Callable, Mapping, MutableMapping, TypeVar
 
 from ..llm.base import *
@@ -96,7 +95,7 @@ class AbstractChain(Protocol):
     ) -> ChainContext:
         ...
 
-    context: Context | None
+    context: Context
 
     complete: Complete | AsyncComplete | None
 
@@ -138,6 +137,22 @@ class Interruptable(AbstractChain, Protocol):
             else:
                 raise jump from None
 
+    _context: Context | None
+
+    @property
+    def context(self):
+        if self._context is None:
+            self._context = {}
+        return self._context
+
+    @context.setter
+    def context(self, context: Context | None):
+        self._context = context
+
+    @context.deleter
+    def context(self):
+        self._context = None
+
 
 class Node(Loader, Interruptable):
     def __init__(
@@ -150,7 +165,7 @@ class Node(Loader, Interruptable):
         **config,
     ):
         self.template = Template(template) if isinstance(template, str) else template
-        self.context = partial_context
+        self._context = partial_context
         self.pre_processes = pre_processes or []
         self.post_processes = post_processes or []
         self.complete = complete
@@ -233,7 +248,7 @@ class Chain(Interruptable):
         complete: Complete | AsyncComplete | None = None,
     ):
         self.nodes = nodes
-        self.context = partial_context
+        self._context = partial_context
         self.complete = complete
 
     def next(self, chain: AbstractChain):
