@@ -1,18 +1,76 @@
+from copy import copy
 from sys import version_info
 from typing import Literal
 
 from .utils import is_message_start
 
+Role = Literal["user", "assistant", "system"]
+
 if version_info >= (3, 11):
     from typing import NotRequired, TypedDict
+
+    class Message(TypedDict):
+        role: Role
+        content: str
+        name: NotRequired[str]
+
 else:
     from typing_extensions import NotRequired, TypedDict
 
+    class Message(TypedDict):
+        role: Role
+        content: str
+        name: NotRequired[str]
 
-class Message(TypedDict):
-    role: Literal["user", "assistant", "system"]
-    content: str
-    name: NotRequired[str]
+
+class MessageBuilder:
+    _initializing = True
+    __slots__ = ("role", "content", "name")
+
+    def __init__(self, role: Role, /, content: str = "", name: str | None = None):
+        self.role: Role = role
+        self.content = content
+        self.name = name
+
+    def __repr__(self):
+        if self.name is not None:
+            return f"{self.role[0].capitalize()} @ {self.name!r} > {self.content!r}"
+        return f"{self.role[0].capitalize()} > {self.content!r}"
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
+
+    def __setattr__(self, key, value) -> None:
+        if not self._initializing:
+            assert self is not U and self is not A and self is not S
+            assert isinstance(value, str)
+        return super().__setattr__(key, value)
+
+    def __matmul__(self, name: str):
+        assert isinstance(name, str) and name
+        obj = copy(self)
+        obj.name = name
+        return obj
+
+    def dict(self) -> Message:
+        if self.name:
+            return {"role": self.role, "content": self.content, "name": self.name}
+        return {"role": self.role, "content": self.content}
+
+    def __gt__(self, content: str) -> Message:
+        assert isinstance(content, str)
+        if self.name:
+            return {"role": self.role, "content": content, "name": self.name}
+        return {"role": self.role, "content": content}
+
+
+U = user = MessageBuilder("user")
+A = assistant = MessageBuilder("assistant")
+S = system = MessageBuilder("system")
+MessageBuilder._initializing = False
 
 
 def ensure(text_or_list: list[Message] | str) -> list[Message]:
