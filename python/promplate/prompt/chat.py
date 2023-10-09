@@ -1,12 +1,12 @@
 from sys import version_info
-from typing import Literal, TypedDict
+from typing import Literal
 
 from .utils import is_message_start
 
 if version_info >= (3, 11):
-    from typing import NotRequired
+    from typing import NotRequired, TypedDict
 else:
-    from typing_extensions import NotRequired
+    from typing_extensions import NotRequired, TypedDict
 
 
 class Message(TypedDict):
