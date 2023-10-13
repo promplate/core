@@ -1,4 +1,3 @@
-from copy import copy
 from sys import version_info
 from typing import Literal
 
@@ -34,8 +33,8 @@ class MessageBuilder:
 
     def __repr__(self):
         if self.name is not None:
-            return f"{self.role[0].capitalize()} @ {self.name!r} > {self.content!r}"
-        return f"{self.role[0].capitalize()} > {self.content!r}"
+            return f"<| {self.role} {self.name} |>"
+        return f"<| {self.role} |>"
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -51,9 +50,7 @@ class MessageBuilder:
 
     def __matmul__(self, name: str):
         assert isinstance(name, str) and name
-        obj = copy(self)
-        obj.name = name
-        return obj
+        return self.__class__(self.role, self.content, name)
 
     def dict(self) -> Message:
         if self.name:
