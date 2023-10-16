@@ -2,6 +2,7 @@ from copy import copy
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Protocol
+from shlex import split
 
 from .builder import *
 from .utils import *
@@ -82,11 +83,20 @@ class TemplateCore(AutoNaming):
     @staticmethod
     def _make_context(text: str):
         pairs = []
-        for token in text.split(" ")[1:]:
+        tokens = split(text)
+        for i, token in enumerate(tokens):
+            if token == "=":
+                assert 0 < i < len(tokens) - 1
+                tokens[i-1] = tokens[i-1] + "=" + tokens[i+1]
+                tokens[i] = ""
+                tokens[i+1] = ""
+        for token in tokens[1:]:
             if token == "*":
                 pairs.append("**locals()")
             elif "=" in token or token.startswith("**"):
                 pairs.append(token)
+            elif token == "":
+                pass
             else:
                 pairs.append(f"{token}={token}")
 
