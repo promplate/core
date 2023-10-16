@@ -1,3 +1,4 @@
+import re
 from copy import copy
 from functools import cached_property
 from pathlib import Path
@@ -28,10 +29,8 @@ class TemplateCore(AutoNaming):
         self._ops_stack = []
 
     def _flush(self):
-        if len(self._buffer) == 1:
-            self._builder.add_line(f"append_result({self._buffer[0]})")
-        elif len(self._buffer) > 1:
-            self._builder.add_line(f"extend_result(({', '.join(self._buffer)}))")
+        for line in self._buffer:
+            self._builder.add_line(line)
         self._buffer.clear()
 
     @staticmethod
@@ -39,11 +38,14 @@ class TemplateCore(AutoNaming):
         return token.strip()[2:-2].strip("-").strip()
 
     def _on_literal_token(self, token: str):
-        self._buffer.append(repr(token))
+        self._buffer.append(f"append_result({repr(token)})")
 
     def _on_eval_token(self, token):
         exp = self._unwrap_token(token)
-        self._buffer.append(f"str({exp})")
+        if len(re.findall("([+\-*/%]|<<|>>)*=", exp)) > 0:
+            self._buffer.append(exp)
+        else:
+            self._buffer.append(f"append_result({exp})")
 
     def _on_comment_token(self, _):
         pass  # TODO: remove blank line
@@ -60,7 +62,7 @@ class TemplateCore(AutoNaming):
         else:
             op = inner.split(" ", 1)[0]
 
-            if op == "if" or op == "for":
+            if op == "if" or op == "for" or op == "while":
                 self._ops_stack.append(op)
                 self._flush()
                 self._builder.add_line(f"{inner}:")
@@ -112,7 +114,7 @@ class TemplateCore(AutoNaming):
             raise SyntaxError(self._ops_stack)
 
         self._flush()
-        self._builder.add_line("return ''.join(result)")
+        self._builder.add_line("return ''.join(map(str, result))")
         self._builder.dedent()
 
     @cached_property
