@@ -42,7 +42,7 @@ class TemplateCore(AutoNaming):
 
     def _on_eval_token(self, token):
         exp = self._unwrap_token(token)
-        if len(re.findall("([+\-*/%]|<<|>>)*=", exp)) > 0:
+        if len(re.findall("([+\-*/%]|<<|>>)=", exp)) > 0:
             self._buffer.append(exp)
         else:
             self._buffer.append(f"append_result({exp})")
