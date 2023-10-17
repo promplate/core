@@ -90,6 +90,14 @@ class TemplateCore(AutoNaming):
                 tokens[i-1] = tokens[i-1] + "=" + tokens[i+1]
                 tokens[i] = ""
                 tokens[i+1] = ""
+            elif token.endswith("="):
+                assert i < len(tokens) - 1
+                tokens[i] = tokens[i] + tokens[i+1]
+                tokens[i+1] = ""
+            elif token.startswith("="):
+                assert i > 0
+                tokens[i-1] = tokens[i-1] + tokens[i]
+                tokens[i] = ""
         for token in tokens[1:]:
             if token == "*":
                 pairs.append("**locals()")
