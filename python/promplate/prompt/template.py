@@ -42,13 +42,11 @@ class TemplateCore(AutoNaming):
 
     def _on_eval_token(self, token):
         exp = self._unwrap_token(token)
-        if len(re.findall("([+\-*/%]|<<|>>)=", exp)) > 0:
-            self._buffer.append(exp)
-        else:
-            self._buffer.append(f"append_result({exp})")
+        self._buffer.append(f"append_result({exp})")
 
-    def _on_comment_token(self, _):
-        pass  # TODO: remove blank line
+    def _on_exec_token(self, token):
+        exp = self._unwrap_token(token)
+        self._buffer.append(exp)
 
     def _on_special_token(self, token, sync: bool):
         inner: str = self._unwrap_token(token)
@@ -99,16 +97,14 @@ class TemplateCore(AutoNaming):
 
         for token in split_template_tokens(self.text):
             s_token = token.strip()
-            if not s_token.startswith("{"):
-                self._on_literal_token(token)
-                continue
             if s_token.startswith("{{"):
                 self._on_eval_token(token)
+            elif s_token.startswith("{#"):
+                self._on_exec_token(token)
             elif s_token.startswith("{%"):
                 self._on_special_token(token, sync)
             else:
-                assert s_token.startswith("{#")
-                self._on_comment_token(token)
+                self._on_literal_token(token)
 
         if self._ops_stack:
             raise SyntaxError(self._ops_stack)
