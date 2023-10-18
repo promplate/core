@@ -81,21 +81,9 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _make_context(text: str):
-        pairs = []
         text = text.strip()
-        tokens = parse_comma_sep_list(text.removeprefix(text.split(" ")[0]))
-
-        for token in tokens:
-            if token == "*":
-                pairs.append("**locals()")
-            elif "=" in token or token.startswith("**"):
-                pairs.append(token)
-            elif token == "":
-                pass
-            else:
-                pairs.append(f"{token}={token}")
-
-        return f"dict({', '.join(pairs)})"
+        args = text.removeprefix(text.split(" ")[0])
+        return f"dict({args})"
 
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)

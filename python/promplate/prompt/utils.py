@@ -1,30 +1,16 @@
 from functools import cached_property
 from inspect import currentframe
 from re import compile
-from pyparsing import quotedString, originalTextFor, OneOrMore, Word, printables, nestedExpr, delimitedList
 
 split_template_tokens = compile(
     r"(\s{%-.*?-%}\s|\s{{-.*?-}}\s|\s{#-.*?-#}\s|\s{%-.*?%}|\s{{-.*?}}|\s{#-.*?#}|{%.*?-%}\s|{{.*?-}}\s|{#.*?-#}\s|{%.*?%}|{{.*?}}|{#.*?#})"
 ).split
 
-comma_sep_list = delimitedList(
-    (quotedString | originalTextFor(
-        OneOrMore(
-            Word(printables, excludeChars="()[]{},")
-            | nestedExpr("(", ")")
-            | nestedExpr("[", "]")
-            | nestedExpr("{", "}")
-        )
-    ))
-)
 
 var_name_checker = compile(r"[_a-zA-Z]\w*$")
 
 is_message_start = compile(r"<\|\s?(user|system|assistant)\s?(\w{1,64})?\s?\|>")
 
-
-def parse_comma_sep_list(text: str) -> list:
-    return comma_sep_list.parseString(text).asList()
 
 def is_not_valid(name: str):
     return not var_name_checker.match(name)
