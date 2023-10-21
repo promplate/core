@@ -27,7 +27,7 @@ I try to make the syntax compatible with `Jinja2`.
 - [ ] if the outer context is a `defaultdict`, the context passing to component should be?
   - or maybe this should be determined by the component itself
   - because a component could be a `Node` and a `Node` can have preprocesses
-- [ ] support while loop and isolated variable declaration
+- [x] support while loop and isolated variable declaration
 - [x] `else` and `elif` tag
 - [ ] directory based routing
 - [ ] caching (and cache-controls maybe?)
