@@ -80,9 +80,9 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _make_context(text: str):
-        text = text.strip()
-        args = text.removeprefix(text.split(" ")[0])
-        return f"dict({args})"
+        """generate context parameter if specified otherwise use locals() by default"""
+
+        return f"dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
 
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)
