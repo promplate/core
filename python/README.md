@@ -21,9 +21,9 @@ I try to make the syntax compatible with `Jinja2`.
 - [ ] template rich printing
 - [x] implement component syntax `{% Component * arg1 arg2 kwarg1=1 kwarg2=2 **kwargs %}`
 - [ ] allow more corner cases for the component syntax
-  - [ ] `{% Componnet arg=" * " %}`
-  - [ ] `{% Componnet arg = " * " %}`
-  - [ ] `{% Componnet arg = await f()`
+  - [x] `{% Component arg=" * " %}`
+  - [x] `{% Component arg = " * " %}`
+  - [ ] `{% Component arg = await f()`
 - [ ] if the outer context is a `defaultdict`, the context passing to component should be?
   - or maybe this should be determined by the component itself
   - because a component could be a `Node` and a `Node` can have preprocesses

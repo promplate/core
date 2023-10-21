@@ -80,16 +80,9 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _make_context(text: str):
-        pairs = []
-        for token in text.split(" ")[1:]:
-            if token == "*":
-                pairs.append("**locals()")
-            elif "=" in token or token.startswith("**"):
-                pairs.append(token)
-            else:
-                pairs.append(f"{token}={token}")
-
-        return f"dict({', '.join(pairs)})"
+        text = text.strip()
+        args = text.removeprefix(text.split(" ")[0])
+        return f"dict({args})"
 
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)
