@@ -72,11 +72,11 @@ class TemplateCore(AutoNaming):
                 self._builder.indent()
 
             else:
-                arguments: str = self._make_context(inner)
+                params: str = self._make_context(inner)
                 if sync:
-                    self._buffer.append(f"{op}.render({arguments})")
+                    self._buffer.append(f"append_result({op}.render({params}))")
                 else:
-                    self._buffer.append(f"await {op}.arender({arguments})")
+                    self._buffer.append(f"append_result(await {op}.arender({params}))")
 
     @staticmethod
     def _make_context(text: str):

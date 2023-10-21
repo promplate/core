@@ -53,5 +53,4 @@ def get_base_builder(sync=True):
         .indent()
         .add_line("result = []")
         .add_line("append_result = result.append")
-        .add_line("extend_result = result.extend")
     )
