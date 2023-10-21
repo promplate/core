@@ -1,4 +1,3 @@
-import re
 from copy import copy
 from functools import cached_property
 from pathlib import Path
