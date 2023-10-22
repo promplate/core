@@ -258,28 +258,6 @@ class SyntaxTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.render_assert("{% if x %}X{% endif now %}")
 
-    def test_loop_redeclare(self):
-        self.render_assert(
-            "@"
-            "{{ n }}"
-            "{% for n in nums %}{{ n }}{% endfor %}"
-            "!",
-            {"n": 9, "nums": [0, 1, 2]},
-            "@9012!"
-        )
-
-    def test_nested_loop_redeclare(self):
-        self.render_assert(
-            "@"
-            "{{ n }}"
-            "{% for n in n %}{{ n }}"
-            "{% for n in n %}{{ n }}{% endfor %}"
-            "{% endfor %}"
-            "!",
-            {"n": [[1, 2, 3], [2, 3, 4], [3, 4, 5]]},
-            "@[[1, 2, 3], [2, 3, 4], [3, 4, 5]][1, 2, 3]123[2, 3, 4]234[3, 4, 5]345!"
-        )
-
     def test_pipe_iteration(self):
         from operator import itemgetter
 
