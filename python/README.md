@@ -19,7 +19,7 @@ I try to make the syntax compatible with `Jinja2`.
 - [ ] support chains and agents
 - [ ] error handling
 - [ ] template rich printing
-- [x] implement component syntax `{% Component arg1, arg2, kwarg1=1, kwarg2=2, **kwargs %}`
+- [x] implement component syntax `{% Component kwarg1=1, kwarg2=2, **kwargs %}`
 - [x] allow more corner cases for the component syntax
   - [x] `{% Component arg=" * " %}`
   - [x] `{% Component arg = " * " %}`
