@@ -19,11 +19,11 @@ I try to make the syntax compatible with `Jinja2`.
 - [ ] support chains and agents
 - [ ] error handling
 - [ ] template rich printing
-- [x] implement component syntax `{% Component * arg1 arg2 kwarg1=1 kwarg2=2 **kwargs %}`
-- [ ] allow more corner cases for the component syntax
+- [x] implement component syntax `{% Component arg1, arg2, kwarg1=1, kwarg2=2, **kwargs %}`
+- [x] allow more corner cases for the component syntax
   - [x] `{% Component arg=" * " %}`
   - [x] `{% Component arg = " * " %}`
-  - [ ] `{% Component arg = await f()`
+  - [x] `{% Component arg = await f() %}`
 - [ ] if the outer context is a `defaultdict`, the context passing to component should be?
   - or maybe this should be determined by the component itself
   - because a component could be a `Node` and a `Node` can have preprocesses
