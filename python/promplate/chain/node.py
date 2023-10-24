@@ -267,7 +267,7 @@ class Chain(Interruptable):
 
     def _run(self, context, /, complete=None):
         for node in self.nodes:
-            context = node.run(context, self.complete or complete)
+            context = node.run(context, self.complete or complete)  # type: ignore
 
         return context
 

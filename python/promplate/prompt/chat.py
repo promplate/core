@@ -8,7 +8,7 @@ Role = Literal["user", "assistant", "system"]
 if version_info >= (3, 11):
     from typing import NotRequired, TypedDict
 
-    class Message(TypedDict):
+    class Message(TypedDict):  # type: ignore
         role: Role
         content: str
         name: NotRequired[str]

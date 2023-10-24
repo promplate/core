@@ -33,3 +33,7 @@ jobs:
         working-directory: python
         run: |
           poetry run test
+      - name: Check Types
+        working-directory: python
+        run: |
+          poetry run npx -y pyright
