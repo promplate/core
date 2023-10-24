@@ -1,12 +1,14 @@
 import unittest
 
-from python.promplate import Node
+from promplate import Node
 
 
 class SyntaxTest(unittest.TestCase):
     """Tests for the syntax of promplate."""
 
-    def render_assert(self, input: str, context: dict | None = None, expected: str | None = None):
+    def render_assert(
+        self, input: str, context: dict | None = None, expected: str | None = None
+    ):
         """
         Render inputted text, then compare with the expected result.
 
@@ -21,7 +23,7 @@ class SyntaxTest(unittest.TestCase):
 
     def test_variables(self):
         # Variables use {{var}} syntax.
-        self.render_assert("Hello, {{name}}!", {'name': 'Ned'}, "Hello, Ned!")
+        self.render_assert("Hello, {{name}}!", {"name": "Ned"}, "Hello, Ned!")
 
     def test_undefined_variables(self):
         # Using undefined names is an error.
@@ -31,13 +33,13 @@ class SyntaxTest(unittest.TestCase):
     def test_reusability(self):
         # A single Node can be used more than once with different data.
         globs = {
-            'upper': lambda x: x.upper(),
-            'punct': '!',
+            "upper": lambda x: x.upper(),
+            "punct": "!",
         }
 
         node = Node("This is {{upper(name)}}{{punct}}", globs)
-        self.assertEqual(node.render({'name': 'Ned'}), "This is NED!")
-        self.assertEqual(node.render({'name': 'Ben'}), "This is BEN!")
+        self.assertEqual(node.render({"name": "Ned"}), "This is NED!")
+        self.assertEqual(node.render({"name": "Ben"}), "This is BEN!")
 
     class DummyObject:
         """Dummy object for testing purposes."""
@@ -69,7 +71,7 @@ class SyntaxTest(unittest.TestCase):
 
     def test_item_access(self):
         # Variables' items can be used.
-        d = {'a': 17, 'b': 23}
+        d = {"a": 17, "b": 23}
         self.render_assert("{{d['a']}} < {{d['b']}}", locals(), "17 < 23")
 
     def test_loops(self):
@@ -78,62 +80,61 @@ class SyntaxTest(unittest.TestCase):
         self.render_assert(
             "Look: {% for n in nums %}{{n}}, {% endfor %}done.",
             locals(),
-            "Look: 1, 2, 3, 4, done."
+            "Look: 1, 2, 3, 4, done.",
         )
 
     def test_empty_loops(self):
         self.render_assert(
             "Empty: {% for n in nums %}{{n}}, {% endfor %}done.",
-            {'nums': []},
-            "Empty: done."
+            {"nums": []},
+            "Empty: done.",
         )
 
     def test_multiline_loops(self):
         self.render_assert(
             "Look: \n{% for n in nums %}\n{{n}}, \n{% endfor %}done.",
-            {'nums': [1, 2, 3]},
-            "Look: \n\n1, \n\n2, \n\n3, \ndone."
+            {"nums": [1, 2, 3]},
+            "Look: \n\n1, \n\n2, \n\n3, \ndone.",
         )
 
     def test_multiple_loops(self):
         self.render_assert(
             "{% for n in nums %}{{n}}{% endfor %} and "
             "{% for n in nums %}{{n}}{% endfor %}",
-            {'nums': [1, 2, 3]},
-            "123 and 123"
+            {"nums": [1, 2, 3]},
+            "123 and 123",
         )
 
     def test_comments(self):
         self.render_assert(
-            "Hello, {## Name goes here: ##}{{name}}!",
-            {'name': 'Ned'}, "Hello, Ned!"
+            "Hello, {## Name goes here: ##}{{name}}!", {"name": "Ned"}, "Hello, Ned!"
         )
 
     def test_if(self):
         self.render_assert(
             "Hi, {% if ned %}NED{% endif %}{% if ben %}BEN{% endif %}!",
-            {'ned': 1, 'ben': 0},
-            "Hi, NED!"
+            {"ned": 1, "ben": 0},
+            "Hi, NED!",
         )
         self.render_assert(
             "Hi, {% if ned %}NED{% endif %}{% if ben %}BEN{% endif %}!",
-            {'ned': 0, 'ben': 1},
-            "Hi, BEN!"
+            {"ned": 0, "ben": 1},
+            "Hi, BEN!",
         )
         self.render_assert(
             "Hi, {% if ned %}NED{% if ben %}BEN{% endif %}{% endif %}!",
-            {'ned': 0, 'ben': 0},
-            "Hi, !"
+            {"ned": 0, "ben": 0},
+            "Hi, !",
         )
         self.render_assert(
             "Hi, {% if ned %}NED{% if ben %}BEN{% endif %}{% endif %}!",
-            {'ned': 1, 'ben': 0},
-            "Hi, NED!"
+            {"ned": 1, "ben": 0},
+            "Hi, NED!",
         )
         self.render_assert(
             "Hi, {% if ned %}NED{% if ben %}BEN{% endif %}{% endif %}!",
-            {'ned': 1, 'ben': 1},
-            "Hi, NEDBEN!"
+            {"ned": 1, "ben": 1},
+            "Hi, NEDBEN!",
         )
 
     def test_complex_if(self):
@@ -145,31 +146,31 @@ class SyntaxTest(unittest.TestCase):
                 """Return it."""
                 return self.it
 
-        obj = ComplexObject(it={'x': "Hello", 'y': 0})
+        obj = ComplexObject(it={"x": "Hello", "y": 0})
         self.render_assert(
             "@"
             "{% if obj.getit['x'] %}X{% endif %}"
             "{% if obj.getit['y'] %}Y{% endif %}"
             "!",
-            {'obj': obj},
-            "@X!"
+            {"obj": obj},
+            "@X!",
         )
 
     def test_loop_if(self):
         self.render_assert(
             "@{% for n in nums %}{% if n %}Z{% endif %}{{n}}{% endfor %}!",
-            {'nums': [0, 1, 2]},
-            "@0Z1Z2!"
+            {"nums": [0, 1, 2]},
+            "@0Z1Z2!",
         )
         self.render_assert(
             "X{%if nums%}@{% for n in nums %}{{n}}{% endfor %}{%endif%}!",
-            {'nums': [0, 1, 2]},
-            "X@012!"
+            {"nums": [0, 1, 2]},
+            "X@012!",
         )
         self.render_assert(
             "X{%if nums%}@{% for n in nums %}{{n}}{% endfor %}{%endif%}!",
-            {'nums': []},
-            "X!"
+            {"nums": []},
+            "X!",
         )
 
     def test_nested_loops(self):
@@ -179,8 +180,8 @@ class SyntaxTest(unittest.TestCase):
             "{% for a in abc %}{{a}}{{n}}{% endfor %}"
             "{% endfor %}"
             "!",
-            {'nums': [0, 1, 2], 'abc': ['a', 'b', 'c']},
-            "@a0b0c0a1b1c1a2b2c2!"
+            {"nums": [0, 1, 2], "abc": ["a", "b", "c"]},
+            "@a0b0c0a1b1c1a2b2c2!",
         )
 
     def test_whitespace_handling(self):
@@ -188,8 +189,8 @@ class SyntaxTest(unittest.TestCase):
             "@{% for n in nums %}\n"
             " {% for a in abc %}{{a}}{{n}}{% endfor %}\n"
             "{% endfor %}!\n",
-            {'nums': [0, 1, 2], 'abc': ['a', 'b', 'c']},
-            "@\n a0b0c0\n\n a1b1c1\n\n a2b2c2\n!\n"
+            {"nums": [0, 1, 2], "abc": ["a", "b", "c"]},
+            "@\n a0b0c0\n\n a1b1c1\n\n a2b2c2\n!\n",
         )
         self.render_assert(
             "@{% for n in nums -%}"
@@ -199,21 +200,17 @@ class SyntaxTest(unittest.TestCase):
             "{{n -}}"
             "{% endfor %}\n"
             "{% endfor %}!\n",
-            {'nums': [0, 1, 2], 'abc': ['a', 'b', 'c']},
-            "@a0b0c0\na1b1c1\na2b2c2\n!\n"
+            {"nums": [0, 1, 2], "abc": ["a", "b", "c"]},
+            "@a0b0c0\na1b1c1\na2b2c2\n!\n",
         )
 
     def test_non_ascii(self):
-        self.render_assert(
-            u"{{where}} ollǝɥ",
-            {'where': u'ǝɹǝɥʇ'},
-            u"ǝɹǝɥʇ ollǝɥ"
-        )
+        self.render_assert("{{where}} ollǝɥ", {"where": "ǝɹǝɥʇ"}, "ǝɹǝɥʇ ollǝɥ")
 
     def test_exception_during_evaluation(self):
         with self.assertRaises(AttributeError):
             self.render_assert(
-                "Hey {{foo.bar.baz}} there", {'foo': None}, "Hey ??? there"
+                "Hey {{foo.bar.baz}} there", {"foo": None}, "Hey ??? there"
             )
 
     def test_bad_names(self):
@@ -262,11 +259,7 @@ class SyntaxTest(unittest.TestCase):
         from operator import itemgetter
 
         self.render_assert(
-            "@"
-            "{% for f in functions %}"
-            "{{ f(nums) }}"
-            "{% endfor %}"
-            "!",
+            "@" "{% for f in functions %}" "{{ f(nums) }}" "{% endfor %}" "!",
             {"functions": map(itemgetter, range(3)), "nums": [1, 2, 3]},
-            "@123!"
+            "@123!",
         )

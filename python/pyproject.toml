@@ -28,6 +28,14 @@ httpx = ["httpx"]
 openai = ["openai"]
 all = ["aiofiles", "httpx", "openai"]
 
+[tool.poetry.group.dev.dependencies]
+isort = "^5"
+black = "^23"
+pytest = "^7"
+
+[tool.poetry.scripts]
+format = "reformat:main"
+test = "pytest:main"
 
 [build-system]
 requires = ["poetry-core"]
