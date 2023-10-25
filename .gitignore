@@ -5,3 +5,10 @@ _*cache*
 *dist*
 *lock*
 **/node_modules
+.pytest_cache
+
+# Generated compatible files
+**/promplate/compatible/chain
+**/promplate/compatible/llm
+**/promplate/compatible/prompt
+**/tests/compatible

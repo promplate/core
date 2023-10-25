@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "pypy3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3.10"]
         exclude:
           - os: windows-latest
             python-version: "3.12"
@@ -20,20 +20,32 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         working-directory: python
         run: |
           python -m pip install -U pip poetry
           poetry install --all-extras --with dev
+
       - name: Run tests
+        if: matrix.python-version != '3.8' && matrix.python-version != '3.9'
         working-directory: python
         run: |
-          poetry run test
+          poetry run test --ignore-glob='*test_compatible.py'
+
+      - name: Run tests (compatible)
+        if: matrix.python-version == '3.8' || matrix.python-version == '3.9'
+        working-directory: python
+        run: |
+          poetry run test "tests/test_compatible.py"
+
       - name: Check Types
+        if: matrix.python-version != '3.8' && matrix.python-version != '3.9'
         working-directory: python
         run: |
           poetry run npx -y pyright

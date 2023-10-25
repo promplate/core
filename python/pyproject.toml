@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.8"
 typing-extensions = { version = "^4", python = "<3.11" }
 aiohttp = { version = "3.9.0b0", python = ">=3.12", optional = true }
 aiofiles = { version = "^23.2", optional = true }
@@ -37,6 +37,9 @@ pytest = "^7"
 [tool.poetry.scripts]
 format = "reformat:main"
 test = "pytest:main"
+
+[tool.pyright]
+exclude = ["**/compatible", "tests"]
 
 [build-system]
 requires = ["poetry-core"]
