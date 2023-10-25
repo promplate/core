@@ -52,7 +52,7 @@ class TemplateCore(AutoNaming):
 
         if inner.startswith("end"):
             last = self._ops_stack.pop()
-            assert last == inner.removeprefix("end")
+            assert last == inner[3:]
             self._flush()
             self._builder.dedent()
 

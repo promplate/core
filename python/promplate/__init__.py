@@ -1,2 +1,6 @@
-from .chain import *
-from .prompt import *
+try:
+    from .chain import *
+    from .prompt import *
+
+except TypeError:
+    from .compatible import *
