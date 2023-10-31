@@ -59,13 +59,13 @@ class TemplateCore(AutoNaming):
         else:
             op = inner.split(" ", 1)[0]
 
-            if op == "if" or op == "for" or op == "while":
+            if op in ["if", "for", "while"]:
                 self._ops_stack.append(op)
                 self._flush()
                 self._builder.add_line(f"{inner}:")
                 self._builder.indent()
 
-            elif op == "else" or op == "elif":
+            elif op in ["else", "elif"]:
                 self._flush()
                 self._builder.dedent()
                 self._builder.add_line(f"{inner}:")

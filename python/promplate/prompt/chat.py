@@ -8,18 +8,13 @@ Role = Literal["user", "assistant", "system"]
 if version_info >= (3, 11):
     from typing import NotRequired, TypedDict
 
-    class Message(TypedDict):  # type: ignore
-        role: Role
-        content: str
-        name: NotRequired[str]
-
 else:
     from typing_extensions import NotRequired, TypedDict
 
-    class Message(TypedDict):
-        role: Role
-        content: str
-        name: NotRequired[str]
+class Message(TypedDict):  # type: ignore
+    role: Role
+    content: str
+    name: NotRequired[str]
 
 
 class MessageBuilder:
@@ -84,8 +79,7 @@ def parse_chat_markup(text: str) -> list[Message]:
     buffer = []
 
     for line in text.splitlines():
-        match = is_message_start.match(line)
-        if match:
+        if match := is_message_start.match(line):
             role, name = match.group(1), match.group(2)
 
             if current_message:

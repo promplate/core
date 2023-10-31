@@ -59,11 +59,10 @@ class ChainContext(ChainMap, dict):
 
     def __ior__(self, other: MutableMapping | None):
         if other is not None and other is not self:
-            if isinstance(other, ChainContext):
-                self.primary_map.maps[0:0] = other.primary_map
-                self.fallback_map.maps[0:0] = other.fallback_map
-            else:
+            if not isinstance(other, ChainContext):
                 return super().__ior__(other)
+            self.primary_map.maps[:0] = other.primary_map
+            self.fallback_map.maps[:0] = other.fallback_map
         return self
 
     def __repr__(self):
@@ -218,10 +217,7 @@ class Node(Loader, Interruptable):
         await self._apply_async_post_processes(context)
 
     def next(self, chain: AbstractChain):
-        if isinstance(chain, Chain):
-            return Chain(self, *chain)
-        else:
-            return Chain(self, chain)
+        return Chain(self, *chain) if isinstance(chain, Chain) else Chain(self, chain)
 
     def __add__(self, chain: AbstractChain):
         return self.next(chain)
