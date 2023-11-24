@@ -5,21 +5,13 @@ from .utils import is_message_start
 
 Role = Literal["user", "assistant", "system"]
 
-if version_info >= (3, 11):
-    from typing import NotRequired, TypedDict
+from typing_extensions import NotRequired, TypedDict
 
-    class Message(TypedDict):  # type: ignore
-        role: Role
-        content: str
-        name: NotRequired[str]
 
-else:
-    from typing_extensions import NotRequired, TypedDict
-
-    class Message(TypedDict):
-        role: Role
-        content: str
-        name: NotRequired[str]
+class Message(TypedDict):
+    role: Role
+    content: str
+    name: NotRequired[str]
 
 
 class MessageBuilder:
