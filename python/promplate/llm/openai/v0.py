@@ -2,17 +2,17 @@ from importlib.metadata import metadata
 from typing import TYPE_CHECKING, Any
 
 import openai
-from openai import ChatCompletion, Completion
+from openai import ChatCompletion, Completion  # type: ignore
 
-from ..prompt.chat import Message, ensure
-from .base import *
+from ...prompt.chat import Message, ensure
+from ..base import *
 
 meta = metadata("promplate")
 
 if openai.api_key is None:
     openai.api_key = ""
 
-openai.app_info = (openai.app_info or {}) | {
+openai.app_info = (openai.app_info or {}) | {  # type: ignore
     "name": "Promplate",
     "version": meta["version"],
     "url": meta["home-page"],
