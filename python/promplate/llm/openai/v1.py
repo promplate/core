@@ -91,7 +91,7 @@ class ChatGenerate(Config):
         config = config | {"stream": True, "messages": messages}
         stream = self.client.chat.completions.create(**config)
         for event in stream:
-            yield event.choices[0].delta.content
+            yield event.choices[0].delta.content or ""
 
 
 @inherit(AsyncGenerate)
@@ -101,4 +101,4 @@ class AsyncChatGenerate(Config):
         config = config | {"stream": True, "messages": messages}
         stream = await self.aclient.chat.completions.create(**config)
         async for event in stream:
-            yield event.choices[0].delta.content
+            yield event.choices[0].delta.content or ""
