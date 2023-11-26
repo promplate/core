@@ -61,7 +61,7 @@ class TextGenerate(Config):
 class AsyncTextGenerate(Config):
     async def __call__(self, text: str, /, **config):
         config = config | {"stream": True, "prompt": text}
-        stream = self.aclient.completions.create(**config)
+        stream = await self.aclient.completions.create(**config)
         async for event in stream:
             yield event.choices[0].text
 
@@ -99,6 +99,6 @@ class AsyncChatGenerate(Config):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = config | {"stream": True, "messages": messages}
-        stream = self.aclient.chat.completions.create(**config)
+        stream = await self.aclient.chat.completions.create(**config)
         async for event in stream:
             yield event.choices[0].delta.content
