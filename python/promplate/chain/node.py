@@ -1,5 +1,5 @@
 from collections import ChainMap
-from typing import Any, Callable, Mapping, MutableMapping, TypeVar
+from typing import Callable, Mapping, MutableMapping, TypeVar, overload
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, Template
@@ -7,20 +7,24 @@ from .utils import appender, resolve
 
 
 class ChainContext(ChainMap, dict):
-    def __init__(
-        self,
-        primary: MutableMapping[Any, Any] | None,
-        /,
-        *fallback: Mapping[Any, Any] | None,
-    ):
-        fallback = tuple(m for m in fallback if m is not None)
-        if isinstance(primary, ChainContext):
-            self.primary_map = primary.primary_map
-            self.fallback_map = primary.fallback_map if not fallback else ChainMap(*fallback, *primary.fallback_map.maps)  # type: ignore
-        else:
-            self.primary_map = ChainMap() if primary is None else ChainMap(primary)
-            self.fallback_map = ChainMap() if not fallback else ChainMap(*fallback)  # type: ignore
-        super().__init__(self.primary_map, self.fallback_map)
+    @overload
+    def __init__(self):
+        ...
+
+    @overload
+    def __init__(self, least: MutableMapping | None = None):
+        ...
+
+    @overload
+    def __init__(self, least: MutableMapping | None = None, *maps: Mapping):
+        ...
+
+    def __init__(self, least: MutableMapping | None = None, *maps: Mapping):
+        super().__init__({} if least is None else least, *maps)  # type: ignore
+
+    @classmethod
+    def ensure(cls, context):
+        return context if isinstance(context, cls) else cls(context)
 
     @property
     def result(self):
@@ -33,41 +37,6 @@ class ChainContext(ChainMap, dict):
     @result.deleter
     def result(self):
         self.__delitem__("__result__")
-
-    def __or__(self, other: Mapping | None):
-        if other is None:
-            return self.copy()
-
-        if isinstance(other, ChainContext):
-            ctx = self.copy()
-            ctx |= other
-            return ctx
-
-        return super().__or__(other)
-
-    def __ror__(self, other: Mapping | None):
-        if other is None:
-            return self.copy()
-
-        if isinstance(other, ChainContext):
-            ctx = self.copy()
-            ctx.primary_map.maps.extend(other.primary_map)
-            ctx.fallback_map.maps.extend(other.fallback_map)
-            return ctx
-
-        return super().__ror__(other)
-
-    def __ior__(self, other: MutableMapping | None):
-        if other is not None and other is not self:
-            if isinstance(other, ChainContext):
-                self.primary_map.maps[0:0] = other.primary_map
-                self.fallback_map.maps[0:0] = other.fallback_map
-            else:
-                return super().__ior__(other)
-        return self
-
-    def __repr__(self):
-        return f"<ChainContext primary={self.primary_map} fallback={self.fallback_map}>"
 
 
 CTX = TypeVar("CTX", Context, ChainContext)
@@ -118,24 +87,30 @@ class Interruptable(AbstractChain, Protocol):
         ...
 
     def run(self, context=None, /, complete=None) -> ChainContext:
-        context = ChainContext(context, self.context)
+        context = ChainContext.ensure(context)
+
         try:
-            return self._run(context, complete) or context
+            self._run(ChainContext(context, self.context), complete)
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                return jump.chain.run(context | jump.context, complete)
+                jump.chain.run(context, complete)
             else:
                 raise jump from None
 
+        return context
+
     async def arun(self, context=None, /, complete=None) -> ChainContext:
-        context = ChainContext(context, self.context)
+        context = ChainContext.ensure(context)
+
         try:
-            return await self._arun(context, complete) or context
+            await self._arun(ChainContext(context, self.context), complete)
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                return await jump.chain.arun(context | jump.context, complete)
+                await jump.chain.arun(context, complete)
             else:
                 raise jump from None
+
+        return context
 
     _context: Context | None
 
