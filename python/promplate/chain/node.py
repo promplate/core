@@ -1,5 +1,5 @@
 from collections import ChainMap
-from typing import Callable, Mapping, MutableMapping, TypeVar, overload
+from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, Self, TypeVar, overload
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, Template
@@ -38,6 +38,9 @@ class ChainContext(ChainMap, dict):
     def result(self):
         self.__delitem__("__result__")
 
+    if TYPE_CHECKING:  # fix type from `collections.ChainMap`
+        copy: Callable[[Self], Self]
+
 
 CTX = TypeVar("CTX", Context, ChainContext)
 
@@ -64,8 +67,6 @@ class AbstractChain(Protocol):
     ) -> ChainContext:
         ...
 
-    context: Context
-
     complete: Complete | AsyncComplete | None
 
 
@@ -75,7 +76,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         complete: Complete | None = None,
-    ) -> ChainContext:
+    ):
         ...
 
     async def _arun(
@@ -83,7 +84,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         complete: Complete | AsyncComplete | None = None,
-    ) -> ChainContext:
+    ):
         ...
 
     def run(self, context=None, /, complete=None) -> ChainContext:
@@ -242,15 +243,11 @@ class Chain(Interruptable):
 
     def _run(self, context, /, complete=None):
         for node in self.nodes:
-            context = node.run(context, self.complete or complete)  # type: ignore
-
-        return context
+            node.run(context, self.complete or complete)  # type: ignore
 
     async def _arun(self, context, /, complete=None):
         for node in self.nodes:
-            context = await node.arun(context, self.complete or complete)
-
-        return context
+            await node.arun(context, self.complete or complete)
 
     def __repr__(self):
         return " + ".join(map(str, self.nodes))
