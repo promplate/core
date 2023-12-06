@@ -1,5 +1,5 @@
 from collections import ChainMap
-from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, Self, TypeVar, overload
+from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, TypeVar, overload
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, Template
@@ -39,6 +39,13 @@ class ChainContext(ChainMap, dict):
         self.__delitem__("__result__")
 
     if TYPE_CHECKING:  # fix type from `collections.ChainMap`
+        from sys import version_info
+
+        if version_info >= (3, 11):
+            from typing_extensions import Self
+        else:
+            from typing import Self
+
         copy: Callable[[Self], Self]
 
 
