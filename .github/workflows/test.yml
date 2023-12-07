@@ -1,8 +1,6 @@
-name: Python Tests
+name: Python Unit Tests and Type Checks
 
-on:
-  push:
-  pull_request:
+on: ["push", "pull_request"]
 
 jobs:
   test:
