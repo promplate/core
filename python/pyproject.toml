@@ -33,9 +33,15 @@ isort = "^5"
 black = "^23"
 pytest = "^7"
 
-[tool.poetry.scripts]
-format = "reformat:main"
-test = "pytest:main"
+[tool.pdm.scripts]
+format = { composite = ["isort ./{args}", "black ./{args}"] }
+test = "pytest"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 100
 
 [build-system]
 requires = ["poetry-core"]

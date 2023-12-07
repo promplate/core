@@ -127,8 +127,7 @@ def test_multiline_loops():
 
 def test_multiple_loops():
     render_assert(
-        "{% for n in nums %}{{n}}{% endfor %} and "
-        "{% for n in nums %}{{n}}{% endfor %}",
+        "{% for n in nums %}{{n}}{% endfor %} and {% for n in nums %}{{n}}{% endfor %}",
         {"nums": [1, 2, 3]},
         "123 and 123",
     )
@@ -181,10 +180,7 @@ def test_complex_if():
 
     obj = ComplexObject(it={"x": "Hello", "y": 0})
     render_assert(
-        "@"
-        "{% if obj.getit['x'] %}X{% endif %}"
-        "{% if obj.getit['y'] %}Y{% endif %}"
-        "!",
+        "@{% if obj.getit['x'] %}X{% endif %}{% if obj.getit['y'] %}Y{% endif %}!",
         {"obj": obj},
         "@X!",
     )
@@ -210,11 +206,7 @@ def test_loop_if():
 
 def test_nested_loops():
     render_assert(
-        "@"
-        "{% for n in nums %}"
-        "{% for a in abc %}{{a}}{{n}}{% endfor %}"
-        "{% endfor %}"
-        "!",
+        "@{% for n in nums %}{% for a in abc %}{{a}}{{n}}{% endfor %}{% endfor %}!",
         {"nums": [0, 1, 2], "abc": ["a", "b", "c"]},
         "@a0b0c0a1b1c1a2b2c2!",
     )
@@ -222,9 +214,7 @@ def test_nested_loops():
 
 def test_whitespace_handling():
     render_assert(
-        "@{% for n in nums %}\n"
-        " {% for a in abc %}{{a}}{{n}}{% endfor %}\n"
-        "{% endfor %}!\n",
+        "@{% for n in nums %}\n {% for a in abc %}{{a}}{{n}}{% endfor %}\n{% endfor %}!\n",
         {"nums": [0, 1, 2], "abc": ["a", "b", "c"]},
         "@\n a0b0c0\n\n a1b1c1\n\n a2b2c2\n!\n",
     )
@@ -302,7 +292,7 @@ def test_pipe_iteration():
     from operator import itemgetter
 
     render_assert(
-        "@" "{% for f in functions %}" "{{ f(nums) }}" "{% endfor %}" "!",
+        "@{% for f in functions %}{{ f(nums) }}{% endfor %}!",
         {"functions": map(itemgetter, range(3)), "nums": [1, 2, 3]},
         "@123!",
     )

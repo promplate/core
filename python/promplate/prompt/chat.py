@@ -71,11 +71,7 @@ MessageBuilder._initializing = False
 
 
 def ensure(text_or_list: list[Message] | str) -> list[Message]:
-    return (
-        parse_chat_markup(text_or_list)
-        if isinstance(text_or_list, str)
-        else text_or_list
-    )
+    return parse_chat_markup(text_or_list) if isinstance(text_or_list, str) else text_or_list
 
 
 def parse_chat_markup(text: str) -> list[Message]:

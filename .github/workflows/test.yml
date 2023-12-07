@@ -27,7 +27,7 @@ jobs:
       - name: Run tests
         working-directory: python
         run: |
-          poetry run test
+          poetry run pytest
       - name: Check Types
         working-directory: python
         run: |
