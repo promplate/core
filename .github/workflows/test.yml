@@ -25,8 +25,12 @@ jobs:
       - name: Run tests
         working-directory: python
         run: |
-          poetry run pytest
-      - name: Check Types
+          poetry run coverage run -m pytest
+      - name: Show coverage report
+        working-directory: python
+        run: |
+          poetry run coverage report
+      - name: Check types
         working-directory: python
         run: |
           poetry run npx -y pyright

@@ -3,6 +3,7 @@ _*cache*
 .idea
 .vscode
 .pdm-python
+.coverage
 *dist*
 *lock*
 **/node_modules
