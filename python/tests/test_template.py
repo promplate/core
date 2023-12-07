@@ -11,7 +11,7 @@ def render_assert(text: str, context: dict | None = None, expected: str | None =
 
     If an exception is expected, the `expected` argument can be left out (which defaults to None).
     """
-    result = Template(text).render(context or {})
+    result = Template(text).render(context)
 
     # If no exception is raised, then an `expected` value must be given.
     assert expected is not None
@@ -296,3 +296,9 @@ def test_pipe_iteration():
         {"functions": map(itemgetter, range(3)), "nums": [1, 2, 3]},
         "@123!",
     )
+
+
+def test_multi_line_tags():
+    render_assert("{# \n # hello world \n #}", expected="")
+    render_assert("{# \n _ = { i for i in range(5) } \n #}", expected="")
+    render_assert("{# \n a = [ i for i in range(5) ] \n #}{{ a }}", expected=str(list(range(5))))
