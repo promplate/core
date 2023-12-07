@@ -121,6 +121,12 @@ class TemplateCore(AutoNaming):
     async def arender(self, context: Context) -> str:
         return await eval(self._arender_code, copy(context))
 
+    @property
+    def script(self, sync=True):
+        """compile template string into python script"""
+        self.compile(sync)
+        return str(self._builder)
+
 
 class Loader(AutoNaming):
     @classmethod
@@ -172,4 +178,12 @@ class Loader(AutoNaming):
 
 
 class Template(TemplateCore, Loader):
-    pass
+    def __init__(self, text: str, /, context: Context | None = None):
+        super().__init__(text)
+        self.context = {} if context is None else context
+
+    def render(self, context: Context | None = None):
+        return super().render(self.context | (context or {}))
+
+    async def arender(self, context: Context | None = None):
+        return await super().arender(self.context | (context or {}))
