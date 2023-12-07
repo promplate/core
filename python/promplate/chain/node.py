@@ -58,7 +58,7 @@ AsyncProcess = Callable[[CTX], Awaitable[CTX | None]]
 
 
 class AbstractChain(Protocol):
-    def run(
+    def invoke(
         self,
         context: Context | None = None,
         /,
@@ -66,19 +66,17 @@ class AbstractChain(Protocol):
     ) -> ChainContext:
         ...
 
-    async def arun(
+    async def ainvoke(
         self,
         context: Context | None = None,
         /,
         complete: Complete | AsyncComplete | None = None,
     ) -> ChainContext:
         ...
-
-    complete: Complete | AsyncComplete | None
 
 
 class Interruptable(AbstractChain, Protocol):
-    def _run(
+    def _invoke(
         self,
         context: ChainContext,
         /,
@@ -86,7 +84,7 @@ class Interruptable(AbstractChain, Protocol):
     ):
         ...
 
-    async def _arun(
+    async def _ainvoke(
         self,
         context: ChainContext,
         /,
@@ -94,27 +92,27 @@ class Interruptable(AbstractChain, Protocol):
     ):
         ...
 
-    def run(self, context=None, /, complete=None) -> ChainContext:
+    def invoke(self, context=None, /, complete=None) -> ChainContext:
         context = ChainContext.ensure(context)
 
         try:
-            self._run(ChainContext(context, self.context), complete)
+            self._invoke(ChainContext(context, self.context), complete)
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                jump.chain.run(context, complete)
+                jump.chain.invoke(context, complete)
             else:
                 raise jump from None
 
         return context
 
-    async def arun(self, context=None, /, complete=None) -> ChainContext:
+    async def ainvoke(self, context=None, /, complete=None) -> ChainContext:
         context = ChainContext.ensure(context)
 
         try:
-            await self._arun(ChainContext(context, self.context), complete)
+            await self._ainvoke(ChainContext(context, self.context), complete)
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                await jump.chain.arun(context, complete)
+                await jump.chain.ainvoke(context, complete)
             else:
                 raise jump from None
 
@@ -142,14 +140,14 @@ class Node(Loader, Interruptable):
         self,
         template: Template | str,
         partial_context: Context | None = None,
-        complete: Complete | AsyncComplete | None = None,
+        llm: LLM | None = None,
         **config,
     ):
         self.template = Template(template) if isinstance(template, str) else template
         self._context = partial_context
-        self.pre_processes = []
-        self.post_processes = []
-        self.complete = complete
+        self.pre_processes: list[Process | AsyncProcess] = []
+        self.post_processes: list[Process | AsyncProcess] = []
+        self.llm = llm
         self.run_config = config
 
     def add_pre_processes(self, *processes: Process | AsyncProcess):
@@ -158,9 +156,9 @@ class Node(Loader, Interruptable):
     def add_post_processes(self, *processes: Process | AsyncProcess):
         self.post_processes.extend(processes)
 
-    def bind_complete(self, complete: Complete | AsyncComplete | None):
-        self.complete = complete
-        return complete
+    def bind_llm(self, llm: LLM | None):
+        self.llm = llm
+        return llm
 
     @property
     def pre_process(self):
@@ -178,8 +176,8 @@ class Node(Loader, Interruptable):
         for process in self.post_processes:
             context |= process(context)
 
-    def _run(self, context, /, complete=None):
-        complete = self.complete or complete
+    def _invoke(self, context, /, complete=None):
+        complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
         self._apply_pre_processes(context)
@@ -197,8 +195,8 @@ class Node(Loader, Interruptable):
         for process in self.post_processes:
             context |= await resolve(process(context))
 
-    async def _arun(self, context, /, complete=None):
-        complete = self.complete or complete
+    async def _ainvoke(self, context, /, complete=None):
+        complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
         await self._apply_async_pre_processes(context)
@@ -236,11 +234,9 @@ class Chain(Interruptable):
         self,
         *nodes: AbstractChain,
         partial_context: Context | None = None,
-        complete: Complete | AsyncComplete | None = None,
     ):
         self.nodes = nodes
         self._context = partial_context
-        self.complete = complete
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
@@ -256,13 +252,13 @@ class Chain(Interruptable):
     def __iter__(self):
         return iter(self.nodes)
 
-    def _run(self, context, /, complete=None):
+    def _invoke(self, context, /, complete=None):
         for node in self.nodes:
-            node.run(context, self.complete or complete)  # type: ignore
+            node.invoke(context, complete)
 
-    async def _arun(self, context, /, complete=None):
+    async def _ainvoke(self, context, /, complete=None):
         for node in self.nodes:
-            await node.arun(context, self.complete or complete)
+            await node.ainvoke(context, complete)
 
     def __repr__(self):
         return " + ".join(map(str, self.nodes))
@@ -279,5 +275,5 @@ class JumpTo(Exception):
         self.context = context
         self.target = target
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.target} does not exist in the hierarchy"
