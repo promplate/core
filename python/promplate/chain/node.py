@@ -1,6 +1,8 @@
 from collections import ChainMap
 from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, TypeVar, overload
 
+from promplate.llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
+
 from ..llm.base import *
 from ..prompt.template import Context, Loader, Template
 from .utils import appender, resolve
@@ -74,6 +76,22 @@ class AbstractChain(Protocol):
     ) -> ChainContext:
         ...
 
+    def stream(
+        self,
+        context: Context | None = None,
+        /,
+        generate: Generate | None = None,
+    ) -> Iterable[ChainContext]:
+        ...
+
+    def astream(
+        self,
+        context: Context | None = None,
+        /,
+        generate: Generate | AsyncGenerate | None = None,
+    ) -> AsyncIterable[ChainContext]:
+        ...
+
 
 class Interruptable(AbstractChain, Protocol):
     def _invoke(
@@ -90,6 +108,22 @@ class Interruptable(AbstractChain, Protocol):
         /,
         complete: Complete | AsyncComplete | None = None,
     ):
+        ...
+
+    def _stream(
+        self,
+        context: ChainContext,
+        /,
+        generate: Generate | None = None,
+    ) -> Iterable:
+        ...
+
+    def _astream(
+        self,
+        context: ChainContext,
+        /,
+        generate: Generate | AsyncGenerate | None = None,
+    ) -> AsyncIterable:
         ...
 
     def invoke(self, context=None, /, complete=None) -> ChainContext:
@@ -117,6 +151,31 @@ class Interruptable(AbstractChain, Protocol):
                 raise jump from None
 
         return context
+
+    def stream(self, context=None, /, generate=None) -> Iterable[ChainContext]:
+        context = ChainContext.ensure(context)
+
+        try:
+            for _ in self._stream(ChainContext(context, self.context), generate):
+                yield context
+        except JumpTo as jump:
+            if jump.target is None or jump.target is self:
+                yield from jump.chain.stream(context, generate)
+            else:
+                raise jump from None
+
+    async def astream(self, context=None, /, generate=None) -> AsyncIterable[ChainContext]:
+        context = ChainContext.ensure(context)
+
+        try:
+            async for _ in self._astream(ChainContext(context, self.context), generate):
+                yield context
+        except JumpTo as jump:
+            if jump.target is None or jump.target is self:
+                async for i in jump.chain.astream(context, generate):
+                    yield i
+            else:
+                raise jump from None
 
     _context: Context | None
 
@@ -187,6 +246,19 @@ class Node(Loader, Interruptable):
 
         self._apply_post_processes(context)
 
+    def _stream(self, context, /, generate=None):
+        generate = self.llm.generate if self.llm else generate
+        assert generate is not None
+
+        self._apply_pre_processes(context)
+        prompt = self.template.render(context)
+
+        context.result = ""
+        for delta in generate(prompt, **self.run_config):  # type: ignore
+            context.result += delta
+            self._apply_post_processes(context)
+            yield context
+
     async def _apply_async_pre_processes(self, context):
         for process in self.pre_processes:
             context |= await resolve(process(context))
@@ -205,6 +277,19 @@ class Node(Loader, Interruptable):
         context.result = await resolve(complete(prompt, **self.run_config))
 
         await self._apply_async_post_processes(context)
+
+    async def _astream(self, context, /, generate=None):
+        generate = self.llm.generate if self.llm else generate
+        assert generate is not None
+
+        await self._apply_async_pre_processes(context)
+        prompt = await self.template.arender(context)
+
+        context.result = ""
+        async for delta in generate(prompt, **self.run_config):  # type: ignore
+            context.result += delta
+            await self._apply_async_post_processes(context)
+            yield context
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Chain):
@@ -259,6 +344,15 @@ class Chain(Interruptable):
     async def _ainvoke(self, context, /, complete=None):
         for node in self.nodes:
             await node.ainvoke(context, complete)
+
+    def _stream(self, context, /, generate=None):
+        for node in self.nodes:
+            yield from node.stream(context, generate)
+
+    async def _astream(self, context, /, generate=None):
+        for node in self.nodes:
+            async for i in node.astream(context, generate):
+                yield i
 
     def __repr__(self):
         return " + ".join(map(str, self.nodes))

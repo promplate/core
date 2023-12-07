@@ -28,5 +28,5 @@ I try to make the syntax compatible with `Jinja2`. So for now I recommend using 
 - [ ] more documentation
 - [ ] javascript implementation
 - [ ] error handling
-- [ ] streaming support
+- [x] streaming support
 - [ ] more unit tests
