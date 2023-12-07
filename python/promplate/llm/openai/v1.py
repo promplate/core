@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import Any, Callable, ParamSpec, TypeVar
 
-from openai import AsyncOpenAI, OpenAI  # type: ignore
+from openai import AsyncClient, Client  # type: ignore
 
 from ...prompt.chat import Message, ensure
 from ..base import *
@@ -10,46 +10,42 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def with_params(_: Callable[P, Any]):
-    """provide type hints with no runtime overhead"""
+def same_params_as(_: Callable[P, Any]):
+    def func(cls: type[T]) -> Callable[P, T]:
+        return cls  # type: ignore
 
-    def inherit(_: type[T]) -> Callable[..., Callable[P, T]]:
-        return lambda as_is: as_is
-
-    return inherit
+    return func
 
 
-inherit = with_params(OpenAI)
+class ClientConfig(Configurable):
+    @same_params_as(Client)  # type: ignore
+    def __init__(self, **config):
+        super().__init__(**config)
 
-
-class Config(Configurable):
     @cached_property
     def client(self):
-        return OpenAI(**self._config)
+        return Client(**self._config)
 
     @cached_property
     def aclient(self):
-        return AsyncOpenAI(**self._config)
+        return AsyncClient(**self._config)
 
 
-@inherit(Complete)
-class TextComplete(Config):
+class TextComplete(ClientConfig):
     def __call__(self, text: str, /, **config):
         config = config | {"stream": False, "prompt": text}
         result = self.client.completions.create(**config)
         return result.choices[0].text
 
 
-@inherit(AsyncComplete)
-class AsyncTextComplete(Config):
+class AsyncTextComplete(ClientConfig):
     async def __call__(self, text: str, /, **config):
         config = config | {"stream": False, "prompt": text}
         result = await self.aclient.completions.create(**config)
         return result.choices[0].text
 
 
-@inherit(Generate)
-class TextGenerate(Config):
+class TextGenerate(ClientConfig):
     def __call__(self, text: str, /, **config):
         config = config | {"stream": True, "prompt": text}
         stream = self.client.completions.create(**config)
@@ -57,8 +53,7 @@ class TextGenerate(Config):
             yield event.choices[0].text
 
 
-@inherit(AsyncGenerate)
-class AsyncTextGenerate(Config):
+class AsyncTextGenerate(ClientConfig):
     async def __call__(self, text: str, /, **config):
         config = config | {"stream": True, "prompt": text}
         stream = await self.aclient.completions.create(**config)
@@ -66,8 +61,7 @@ class AsyncTextGenerate(Config):
             yield event.choices[0].text
 
 
-@inherit(Complete)
-class ChatComplete(Config):
+class ChatComplete(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = config | {"stream": False, "messages": messages}
@@ -75,8 +69,7 @@ class ChatComplete(Config):
         return result.choices[0].message.content
 
 
-@inherit(AsyncComplete)
-class AsyncChatComplete(Config):
+class AsyncChatComplete(ClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = config | {"stream": False, "messages": messages}
@@ -84,8 +77,7 @@ class AsyncChatComplete(Config):
         return result.choices[0].message.content
 
 
-@inherit(Generate)
-class ChatGenerate(Config):
+class ChatGenerate(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = config | {"stream": True, "messages": messages}
@@ -94,11 +86,30 @@ class ChatGenerate(Config):
             yield event.choices[0].delta.content or ""
 
 
-@inherit(AsyncGenerate)
-class AsyncChatGenerate(Config):
+class AsyncChatGenerate(ClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = config | {"stream": True, "messages": messages}
         stream = await self.aclient.chat.completions.create(**config)
         async for event in stream:
             yield event.choices[0].delta.content or ""
+
+
+class SyncTextOpenAI(ClientConfig):
+    complete = TextComplete.__call__
+    generate = TextGenerate.__call__
+
+
+class AsyncTextOpenAI(ClientConfig):
+    complete = AsyncTextComplete.__call__
+    generate = AsyncTextGenerate.__call__
+
+
+class SyncChatOpenAI(ClientConfig):
+    complete = ChatComplete.__call__
+    generate = ChatGenerate.__call__
+
+
+class AsyncChatOpenAI(ClientConfig):
+    complete = AsyncChatComplete.__call__
+    generate = AsyncChatGenerate.__call__

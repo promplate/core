@@ -29,3 +29,8 @@ class AsyncComplete(Protocol):
 class AsyncGenerate(Protocol):
     def __call__(self, prompt, /, **config) -> AsyncIterable[str]:
         ...
+
+
+class LLM(Protocol):
+    complete: Complete | AsyncComplete
+    generate: Generate | AsyncGenerate
