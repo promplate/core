@@ -142,17 +142,25 @@ class Node(Loader, Interruptable):
         self,
         template: Template | str,
         partial_context: Context | None = None,
-        pre_processes: list[Process | AsyncProcess] | None = None,
-        post_processes: list[Process | AsyncProcess] | None = None,
         complete: Complete | AsyncComplete | None = None,
         **config,
     ):
         self.template = Template(template) if isinstance(template, str) else template
         self._context = partial_context
-        self.pre_processes = pre_processes or []
-        self.post_processes = post_processes or []
+        self.pre_processes = []
+        self.post_processes = []
         self.complete = complete
         self.run_config = config
+
+    def add_pre_processes(self, *processes: Process | AsyncProcess):
+        self.pre_processes.extend(processes)
+
+    def add_post_processes(self, *processes: Process | AsyncProcess):
+        self.post_processes.extend(processes)
+
+    def bind_complete(self, complete: Complete | AsyncComplete | None):
+        self.complete = complete
+        return complete
 
     @property
     def pre_process(self):
