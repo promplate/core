@@ -2,6 +2,7 @@ _*cache*
 *.pyc
 .idea
 .vscode
+.pdm-python
 *dist*
 *lock*
 **/node_modules
