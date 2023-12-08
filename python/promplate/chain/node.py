@@ -239,8 +239,7 @@ class Node(Loader, Interruptable):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
-        self._apply_pre_processes(context)
-        prompt = self.template.render(context)
+        prompt = self.render(context)
 
         context.result = complete(prompt, **self.run_config)
 
@@ -250,8 +249,7 @@ class Node(Loader, Interruptable):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
-        self._apply_pre_processes(context)
-        prompt = self.template.render(context)
+        prompt = self.render(context)
 
         context.result = ""
         for delta in generate(prompt, **self.run_config):  # type: ignore
@@ -271,8 +269,7 @@ class Node(Loader, Interruptable):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
-        await self._apply_async_pre_processes(context)
-        prompt = await self.template.arender(context)
+        prompt = await self.arender(context)
 
         context.result = await resolve(complete(prompt, **self.run_config))
 
@@ -282,8 +279,7 @@ class Node(Loader, Interruptable):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
-        await self._apply_async_pre_processes(context)
-        prompt = await self.template.arender(context)
+        prompt = await self.arender(context)
 
         context.result = ""
         async for delta in generate(prompt, **self.run_config):  # type: ignore
