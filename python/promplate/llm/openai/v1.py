@@ -31,7 +31,7 @@ class ClientConfig(Configurable):
         return obj
 
     @property
-    def _config(self):
+    def _config(self):  # type: ignore
         return MappingProxyType(super()._config)
 
     @cached_property
@@ -101,7 +101,7 @@ class ChatGenerate(ClientConfig):
 class AsyncChatGenerate(ClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = self.run_config | config | {"stream": True, "messages": messages}
+        config = self._run_config | config | {"stream": True, "messages": messages}
         stream = await self.aclient.chat.completions.create(**config)
         async for event in stream:
             yield event.choices[0].delta.content or ""
