@@ -62,6 +62,7 @@ class AbstractChain(Protocol):
         context: Context | None = None,
         /,
         complete: Complete | None = None,
+        **config,
     ) -> ChainContext:
         ...
 
@@ -70,6 +71,7 @@ class AbstractChain(Protocol):
         context: Context | None = None,
         /,
         complete: Complete | AsyncComplete | None = None,
+        **config,
     ) -> ChainContext:
         ...
 
@@ -78,6 +80,7 @@ class AbstractChain(Protocol):
         context: Context | None = None,
         /,
         generate: Generate | None = None,
+        **config,
     ) -> Iterable[ChainContext]:
         ...
 
@@ -86,6 +89,7 @@ class AbstractChain(Protocol):
         context: Context | None = None,
         /,
         generate: Generate | AsyncGenerate | None = None,
+        **config,
     ) -> AsyncIterable[ChainContext]:
         ...
 
@@ -96,6 +100,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         complete: Complete | None = None,
+        **config,
     ):
         ...
 
@@ -104,6 +109,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         complete: Complete | AsyncComplete | None = None,
+        **config,
     ):
         ...
 
@@ -112,6 +118,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         generate: Generate | None = None,
+        **config,
     ) -> Iterable:
         ...
 
@@ -120,56 +127,57 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         generate: Generate | AsyncGenerate | None = None,
+        **config,
     ) -> AsyncIterable:
         ...
 
-    def invoke(self, context=None, /, complete=None) -> ChainContext:
+    def invoke(self, context=None, /, complete=None, **config) -> ChainContext:
         context = ChainContext.ensure(context)
 
         try:
-            self._invoke(ChainContext(context, self.context), complete)
+            self._invoke(ChainContext(context, self.context), complete, **config)
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                jump.chain.invoke(context, complete)
+                jump.chain.invoke(context, complete, **config)
             else:
                 raise jump from None
 
         return context
 
-    async def ainvoke(self, context=None, /, complete=None) -> ChainContext:
+    async def ainvoke(self, context=None, /, complete=None, **config) -> ChainContext:
         context = ChainContext.ensure(context)
 
         try:
-            await self._ainvoke(ChainContext(context, self.context), complete)
+            await self._ainvoke(ChainContext(context, self.context), complete, **config)
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                await jump.chain.ainvoke(context, complete)
+                await jump.chain.ainvoke(context, complete, **config)
             else:
                 raise jump from None
 
         return context
 
-    def stream(self, context=None, /, generate=None) -> Iterable[ChainContext]:
+    def stream(self, context=None, /, generate=None, **config) -> Iterable[ChainContext]:
         context = ChainContext.ensure(context)
 
         try:
-            for _ in self._stream(ChainContext(context, self.context), generate):
+            for _ in self._stream(ChainContext(context, self.context), generate, **config):
                 yield context
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                yield from jump.chain.stream(context, generate)
+                yield from jump.chain.stream(context, generate, **config)
             else:
                 raise jump from None
 
-    async def astream(self, context=None, /, generate=None) -> AsyncIterable[ChainContext]:
+    async def astream(self, context=None, /, generate=None, **config) -> AsyncIterable[ChainContext]:
         context = ChainContext.ensure(context)
 
         try:
-            async for _ in self._astream(ChainContext(context, self.context), generate):
+            async for _ in self._astream(ChainContext(context, self.context), generate, **config):
                 yield context
         except JumpTo as jump:
             if jump.target is None or jump.target is self:
-                async for i in jump.chain.astream(context, generate):
+                async for i in jump.chain.astream(context, generate, **config):
                     yield i
             else:
                 raise jump from None
@@ -247,24 +255,24 @@ class Node(Loader, Interruptable):
         for callback in self.callbacks:
             context |= callback.post_process(context) or {}
 
-    def _invoke(self, context, /, complete=None):
+    def _invoke(self, context, /, complete=None, **config):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
         prompt = self.render(context)
 
-        context.result = complete(prompt, **self.run_config)
+        context.result = complete(prompt, **self.run_config, **config)
 
         self._apply_post_processes(context)
 
-    def _stream(self, context, /, generate=None):
+    def _stream(self, context, /, generate=None, **config):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
         prompt = self.render(context)
 
         context.result = ""
-        for delta in generate(prompt, **self.run_config):  # type: ignore
+        for delta in generate(prompt, **self.run_config, **config):  # type: ignore
             context.result += delta
             self._apply_post_processes(context)
             yield context
@@ -277,24 +285,24 @@ class Node(Loader, Interruptable):
         for callback in self.callbacks:
             context |= await resolve(callback.post_process(context)) or {}
 
-    async def _ainvoke(self, context, /, complete=None):
+    async def _ainvoke(self, context, /, complete=None, **config):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
         prompt = await self.arender(context)
 
-        context.result = await resolve(complete(prompt, **self.run_config))
+        context.result = await resolve(complete(prompt, **self.run_config, **config))
 
         await self._apply_async_post_processes(context)
 
-    async def _astream(self, context, /, generate=None):
+    async def _astream(self, context, /, generate=None, **config):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
         prompt = await self.arender(context)
 
         context.result = ""
-        async for delta in generate(prompt, **self.run_config):  # type: ignore
+        async for delta in generate(prompt, **self.run_config, **config):  # type: ignore
             context.result += delta
             await self._apply_async_post_processes(context)
             yield context
@@ -345,21 +353,21 @@ class Chain(Interruptable):
     def __iter__(self):
         return iter(self.nodes)
 
-    def _invoke(self, context, /, complete=None):
+    def _invoke(self, context, /, complete=None, **config):
         for node in self.nodes:
-            node.invoke(context, complete)
+            node.invoke(context, complete, **config)
 
-    async def _ainvoke(self, context, /, complete=None):
+    async def _ainvoke(self, context, /, complete=None, **config):
         for node in self.nodes:
-            await node.ainvoke(context, complete)
+            await node.ainvoke(context, complete, **config)
 
-    def _stream(self, context, /, generate=None):
+    def _stream(self, context, /, generate=None, **config):
         for node in self.nodes:
-            yield from node.stream(context, generate)
+            yield from node.stream(context, generate, **config)
 
-    async def _astream(self, context, /, generate=None):
+    async def _astream(self, context, /, generate=None, **config):
         for node in self.nodes:
-            async for i in node.astream(context, generate):
+            async for i in node.astream(context, generate, **config):
                 yield i
 
     def __repr__(self):
