@@ -8,7 +8,7 @@ class Configurable:
 
     @property
     def _config(self):
-        return self.__dict__
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
 
 class Complete(Protocol):

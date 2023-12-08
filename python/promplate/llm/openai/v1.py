@@ -1,4 +1,6 @@
+from copy import copy
 from functools import cached_property
+from types import MappingProxyType
 from typing import Any, Callable, ParamSpec, TypeVar
 
 from openai import AsyncClient, Client  # type: ignore
@@ -21,6 +23,16 @@ class ClientConfig(Configurable):
     @same_params_as(Client)
     def __init__(self, **config):
         super().__init__(**config)
+        self._run_config = {}
+
+    def bind(self, **run_config):
+        obj = copy(self)
+        obj._run_config = self._run_config | run_config
+        return obj
+
+    @property
+    def _config(self):
+        return MappingProxyType(super()._config)
 
     @cached_property
     def client(self):
@@ -33,21 +45,21 @@ class ClientConfig(Configurable):
 
 class TextComplete(ClientConfig):
     def __call__(self, text: str, /, **config):
-        config = config | {"stream": False, "prompt": text}
+        config = self._run_config | config | {"stream": False, "prompt": text}
         result = self.client.completions.create(**config)
         return result.choices[0].text
 
 
 class AsyncTextComplete(ClientConfig):
     async def __call__(self, text: str, /, **config):
-        config = config | {"stream": False, "prompt": text}
+        config = self._run_config | config | {"stream": False, "prompt": text}
         result = await self.aclient.completions.create(**config)
         return result.choices[0].text
 
 
 class TextGenerate(ClientConfig):
     def __call__(self, text: str, /, **config):
-        config = config | {"stream": True, "prompt": text}
+        config = self._run_config | config | {"stream": True, "prompt": text}
         stream = self.client.completions.create(**config)
         for event in stream:
             yield event.choices[0].text
@@ -55,7 +67,7 @@ class TextGenerate(ClientConfig):
 
 class AsyncTextGenerate(ClientConfig):
     async def __call__(self, text: str, /, **config):
-        config = config | {"stream": True, "prompt": text}
+        config = self._run_config | config | {"stream": True, "prompt": text}
         stream = await self.aclient.completions.create(**config)
         async for event in stream:
             yield event.choices[0].text
@@ -64,7 +76,7 @@ class AsyncTextGenerate(ClientConfig):
 class ChatComplete(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = config | {"stream": False, "messages": messages}
+        config = self._run_config | config | {"stream": False, "messages": messages}
         result = self.client.chat.completions.create(**config)
         return result.choices[0].message.content
 
@@ -72,7 +84,7 @@ class ChatComplete(ClientConfig):
 class AsyncChatComplete(ClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = config | {"stream": False, "messages": messages}
+        config = self._run_config | config | {"stream": False, "messages": messages}
         result = await self.aclient.chat.completions.create(**config)
         return result.choices[0].message.content
 
@@ -80,7 +92,7 @@ class AsyncChatComplete(ClientConfig):
 class ChatGenerate(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = config | {"stream": True, "messages": messages}
+        config = self._run_config | config | {"stream": True, "messages": messages}
         stream = self.client.chat.completions.create(**config)
         for event in stream:
             yield event.choices[0].delta.content or ""
@@ -89,7 +101,7 @@ class ChatGenerate(ClientConfig):
 class AsyncChatGenerate(ClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = config | {"stream": True, "messages": messages}
+        config = self.run_config | config | {"stream": True, "messages": messages}
         stream = await self.aclient.chat.completions.create(**config)
         async for event in stream:
             yield event.choices[0].delta.content or ""
