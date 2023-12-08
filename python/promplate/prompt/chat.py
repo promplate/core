@@ -101,4 +101,4 @@ def parse_chat_markup(text: str) -> list[Message]:
         current_message["content"] = "\n".join(buffer)
         messages.append(current_message)
 
-    return messages or [{"role": "user", "content": text}]
+    return messages or [{"role": "user", "content": text.removesuffix("\n")}]
