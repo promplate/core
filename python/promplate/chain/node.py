@@ -1,10 +1,10 @@
 from collections import ChainMap
 from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, TypeVar, overload
 
-from promplate.llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
-
 from ..llm.base import *
+from ..llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
 from ..prompt.template import Context, Loader, Template
+from .callback import AbstractCallback, Callback
 from .utils import appender, resolve
 
 
@@ -204,36 +204,51 @@ class Node(Loader, Interruptable):
     ):
         self.template = Template(template) if isinstance(template, str) else template
         self._context = partial_context
-        self.pre_processes: list[Process | AsyncProcess] = []
-        self.post_processes: list[Process | AsyncProcess] = []
+        self.callbacks: list[AbstractCallback] = []
         self.llm = llm
         self.run_config = config
 
     def add_pre_processes(self, *processes: Process | AsyncProcess):
-        self.pre_processes.extend(processes)
+        self.callbacks.extend(Callback(pre_process=i) for i in processes)
 
     def add_post_processes(self, *processes: Process | AsyncProcess):
-        self.post_processes.extend(processes)
+        self.callbacks.extend(Callback(post_process=i) for i in processes)
 
     def bind_llm(self, llm: LLM | None):
         self.llm = llm
         return llm
 
     @property
+    def callback(self):
+        def wrapper(callback_class: type[Callback]):
+            self.callbacks.append(callback_class())
+            return callback_class
+
+        return wrapper
+
+    @property
     def pre_process(self):
-        return appender(self.pre_processes)
+        def wrapper(process: Process | AsyncProcess):
+            self.add_pre_processes(process)
+            return process
+
+        return wrapper
 
     @property
     def post_process(self):
-        return appender(self.post_processes)
+        def wrapper(process: Process | AsyncProcess):
+            self.add_post_processes(process)
+            return process
+
+        return wrapper
 
     def _apply_pre_processes(self, context):
-        for process in self.pre_processes:
-            context |= process(context)
+        for callback in self.callbacks:
+            context |= callback.pre_process(context) or {}
 
     def _apply_post_processes(self, context):
-        for process in self.post_processes:
-            context |= process(context)
+        for callback in self.callbacks:
+            context |= callback.post_process(context) or {}
 
     def _invoke(self, context, /, complete=None):
         complete = self.llm.complete if self.llm else complete
@@ -258,12 +273,12 @@ class Node(Loader, Interruptable):
             yield context
 
     async def _apply_async_pre_processes(self, context):
-        for process in self.pre_processes:
-            context |= await resolve(process(context))
+        for callback in self.callbacks:
+            context |= await resolve(callback.pre_process(context)) or {}
 
     async def _apply_async_post_processes(self, context):
-        for process in self.post_processes:
-            context |= await resolve(process(context))
+        for callback in self.callbacks:
+            context |= await resolve(callback.post_process(context)) or {}
 
     async def _ainvoke(self, context, /, complete=None):
         complete = self.llm.complete if self.llm else complete
