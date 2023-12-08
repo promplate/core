@@ -5,7 +5,7 @@ from ..llm.base import *
 from ..llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
 from ..prompt.template import Context, Loader, Template
 from .callback import AbstractCallback, Callback
-from .utils import resolve
+from .utils import iterate, resolve
 
 
 class ChainContext(ChainMap, dict):
@@ -302,7 +302,7 @@ class Node(Loader, Interruptable):
         prompt = await self.arender(context)
 
         context.result = ""
-        async for delta in generate(prompt, **self.run_config, **config):  # type: ignore
+        async for delta in iterate(generate(prompt, **self.run_config, **config)):
             context.result += delta
             await self._apply_async_post_processes(context)
             yield context

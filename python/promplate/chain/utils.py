@@ -1,5 +1,5 @@
-from inspect import Parameter, isawaitable, signature
-from typing import Awaitable, Callable, TypeVar
+from inspect import Parameter, isasyncgen, isawaitable, signature
+from typing import AsyncIterable, Awaitable, Callable, Iterable, TypeVar
 
 T = TypeVar("T")
 
@@ -26,3 +26,12 @@ async def resolve(maybe_awaitable: T | Awaitable[T], /) -> T:
         maybe_awaitable = await maybe_awaitable
 
     return maybe_awaitable  # type: ignore
+
+
+async def iterate(maybe_asyncgen: Iterable | AsyncIterable):
+    if isasyncgen(maybe_asyncgen):
+        async for i in maybe_asyncgen:
+            yield i
+    else:
+        for i in maybe_asyncgen:  # type: ignore
+            yield i
