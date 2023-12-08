@@ -7,10 +7,10 @@ if TYPE_CHECKING:
 
 
 class AbstractCallback(Protocol):
-    def pre_process(self, context: "ChainContext") -> Context | Awaitable[Context] | None:
+    def pre_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
         ...
 
-    def post_process(self, context: "ChainContext") -> Context | Awaitable[Context] | None:
+    def post_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
         ...
 
 

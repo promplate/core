@@ -5,7 +5,7 @@ from ..llm.base import *
 from ..llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
 from ..prompt.template import Context, Loader, Template
 from .callback import AbstractCallback, Callback
-from .utils import appender, resolve
+from .utils import resolve
 
 
 class ChainContext(ChainMap, dict):
@@ -51,12 +51,9 @@ class ChainContext(ChainMap, dict):
         copy: Callable[[Self], Self]
 
 
-CTX = TypeVar("CTX", Context, ChainContext)
+Process = Callable[[ChainContext], Context | None]
 
-
-Process = Callable[[CTX], CTX | None]
-
-AsyncProcess = Callable[[CTX], Awaitable[CTX | None]]
+AsyncProcess = Callable[[ChainContext], Awaitable[Context | None]]
 
 
 class AbstractChain(Protocol):
