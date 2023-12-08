@@ -11,14 +11,14 @@ T = TypeVar("T")
 
 
 def same_params_as(_: Callable[P, Any]):
-    def func(cls: type[T]) -> Callable[P, T]:
-        return cls  # type: ignore
+    def func(__init__: Callable[..., None]) -> Callable[P, None]:
+        return __init__  # type: ignore
 
     return func
 
 
 class ClientConfig(Configurable):
-    @same_params_as(Client)  # type: ignore
+    @same_params_as(Client)
     def __init__(self, **config):
         super().__init__(**config)
 
@@ -95,21 +95,21 @@ class AsyncChatGenerate(ClientConfig):
             yield event.choices[0].delta.content or ""
 
 
-class SyncTextOpenAI(ClientConfig):
-    complete = TextComplete.__call__
-    generate = TextGenerate.__call__
+class SyncTextOpenAI(ClientConfig, LLM):
+    complete: TextComplete = TextComplete.__call__  # type: ignore
+    generate: TextGenerate = TextGenerate.__call__  # type: ignore
 
 
-class AsyncTextOpenAI(ClientConfig):
-    complete = AsyncTextComplete.__call__
-    generate = AsyncTextGenerate.__call__
+class AsyncTextOpenAI(ClientConfig, LLM):
+    complete: AsyncTextComplete = AsyncTextComplete.__call__  # type: ignore
+    generate: AsyncTextGenerate = AsyncTextGenerate.__call__  # type: ignore
 
 
-class SyncChatOpenAI(ClientConfig):
-    complete = ChatComplete.__call__
-    generate = ChatGenerate.__call__
+class SyncChatOpenAI(ClientConfig, LLM):
+    complete: ChatComplete = ChatComplete.__call__  # type: ignore
+    generate: ChatGenerate = ChatGenerate.__call__  # type: ignore
 
 
-class AsyncChatOpenAI(ClientConfig):
-    complete = AsyncChatComplete.__call__
-    generate = AsyncChatGenerate.__call__
+class AsyncChatOpenAI(ClientConfig, LLM):
+    complete: AsyncChatComplete = AsyncChatComplete.__call__  # type: ignore
+    generate: AsyncChatGenerate = AsyncChatGenerate.__call__  # type: ignore

@@ -1,6 +1,6 @@
 from openai.version import VERSION
 
-if VERSION.startswith("1"):
-    from .v1 import *
-else:
+if VERSION.startswith("0"):
     from .v0 import *
+else:
+    from .v1 import *
