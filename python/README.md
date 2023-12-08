@@ -30,3 +30,4 @@ I try to make the syntax compatible with `Jinja2`. So for now I recommend using 
 - [ ] error handling
 - [x] streaming support
 - [ ] more unit tests
+- [ ] the order of callbacks matters

@@ -121,8 +121,7 @@ class TemplateCore(AutoNaming):
     async def arender(self, context: Context) -> str:
         return await eval(self._arender_code, copy(context))
 
-    @property
-    def script(self, sync=True):
+    def get_script(self, sync=True):
         """compile template string into python script"""
         self.compile(sync)
         return str(self._builder)
