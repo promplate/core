@@ -331,14 +331,15 @@ class Node(Loader, Interruptable):
             await self._apply_async_post_processes(context)
             yield context
 
-    def next(self, chain: AbstractChain):
-        if isinstance(chain, Chain):
-            return Chain(self, *chain)
-        else:
-            return Chain(self, chain)
+    @staticmethod
+    def _get_chain_type():
+        return Chain
 
     def __add__(self, chain: AbstractChain):
-        return self.next(chain)
+        if isinstance(chain, Chain):
+            return self._get_chain_type()(self, *chain)
+        else:
+            return self._get_chain_type()(self, chain)
 
     def render(self, context: Context | None = None):
         context = ChainContext(context, self.context)
@@ -366,9 +367,9 @@ class Chain(Interruptable):
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
-            return Chain(*self, chain)
+            return self.__class__(*self, chain)
         elif isinstance(chain, Chain):
-            return Chain(*self, *chain)
+            return self.__class__(*self, *chain)
         else:
             raise NotImplementedError
 
