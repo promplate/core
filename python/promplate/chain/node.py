@@ -1,4 +1,5 @@
 from collections import ChainMap
+from inspect import isclass
 from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, overload
 
 from ..llm.base import *
@@ -94,12 +95,17 @@ class AbstractChain(Protocol):
         ...
 
 
+def ensure_callbacks(callbacks: list[AbstractCallback | type[AbstractCallback]]) -> list[AbstractCallback]:
+    return [i() if isclass(i) else i for i in callbacks]
+
+
 class Interruptable(AbstractChain, Protocol):
     def _invoke(
         self,
         context: ChainContext,
         /,
-        complete: Complete | None = None,
+        complete: Complete | None,
+        callbacks: list[AbstractCallback],
         **config,
     ):
         ...
@@ -108,7 +114,8 @@ class Interruptable(AbstractChain, Protocol):
         self,
         context: ChainContext,
         /,
-        complete: Complete | AsyncComplete | None = None,
+        complete: Complete | AsyncComplete | None,
+        callbacks: list[AbstractCallback],
         **config,
     ):
         ...
@@ -117,7 +124,8 @@ class Interruptable(AbstractChain, Protocol):
         self,
         context: ChainContext,
         /,
-        generate: Generate | None = None,
+        generate: Generate | None,
+        callbacks: list[AbstractCallback],
         **config,
     ) -> Iterable:
         ...
@@ -126,32 +134,34 @@ class Interruptable(AbstractChain, Protocol):
         self,
         context: ChainContext,
         /,
-        generate: Generate | AsyncGenerate | None = None,
+        generate: Generate | AsyncGenerate | None,
+        callbacks: list[AbstractCallback],
         **config,
     ) -> AsyncIterable:
         ...
 
-    callbacks: list[AbstractCallback]
+    callbacks: list[AbstractCallback | type[AbstractCallback]]
 
-    def enter(self, context: Context | None, config):
-        for callback in self.callbacks:
+    def enter(self, context: Context | None, config: Context):
+        callbacks: list[AbstractCallback] = ensure_callbacks(self.callbacks)
+        for callback in callbacks:
             context, config = callback.on_enter(context, config)
-        return context, config
+        return context, config, callbacks
 
-    def leave(self, context: ChainContext, config):
-        for callback in reversed(self.callbacks):
+    def leave(self, context: ChainContext, config: Context, callbacks: list[AbstractCallback]):
+        for callback in reversed(callbacks):
             context, config = callback.on_leave(context, config)
         return context, config
 
     def invoke(self, context=None, /, complete=None, **config) -> ChainContext:
-        context, config = self.enter(context, config)
+        context, config, callbacks = self.enter(context, config)
         context = ChainContext.ensure(context)
 
         try:
-            self._invoke(ChainContext(context, self.context), complete, **config)
-            context, config = self.leave(context, config)
+            self._invoke(ChainContext(context, self.context), complete, callbacks, **config)
+            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
-            context, config = self.leave(context, config)
+            context, config = self.leave(context, config, callbacks)
             if jump.target is None or jump.target is self:
                 jump.chain.invoke(context, complete, **config)
             else:
@@ -160,14 +170,14 @@ class Interruptable(AbstractChain, Protocol):
         return context
 
     async def ainvoke(self, context=None, /, complete=None, **config) -> ChainContext:
-        context, config = self.enter(context, config)
+        context, config, callbacks = self.enter(context, config)
         context = ChainContext.ensure(context)
 
         try:
-            await self._ainvoke(ChainContext(context, self.context), complete, **config)
-            context, config = self.leave(context, config)
+            await self._ainvoke(ChainContext(context, self.context), complete, callbacks, **config)
+            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
-            context, config = self.leave(context, config)
+            context, config = self.leave(context, config, callbacks)
             if jump.target is None or jump.target is self:
                 await jump.chain.ainvoke(context, complete, **config)
             else:
@@ -176,30 +186,30 @@ class Interruptable(AbstractChain, Protocol):
         return context
 
     def stream(self, context=None, /, generate=None, **config) -> Iterable[ChainContext]:
-        context, config = self.enter(context, config)
+        context, config, callbacks = self.enter(context, config)
         context = ChainContext.ensure(context)
 
         try:
-            for _ in self._stream(ChainContext(context, self.context), generate, **config):
+            for _ in self._stream(ChainContext(context, self.context), generate, callbacks, **config):
                 yield context
-            context, config = self.leave(context, config)
+            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
-            context, config = self.leave(context, config)
+            context, config = self.leave(context, config, callbacks)
             if jump.target is None or jump.target is self:
                 yield from jump.chain.stream(context, generate, **config)
             else:
                 raise jump from None
 
     async def astream(self, context=None, /, generate=None, **config) -> AsyncIterable[ChainContext]:
-        context, config = self.enter(context, config)
+        context, config, callbacks = self.enter(context, config)
         context = ChainContext.ensure(context)
 
         try:
-            async for _ in self._astream(ChainContext(context, self.context), generate, **config):
+            async for _ in self._astream(ChainContext(context, self.context), generate, callbacks, **config):
                 yield context
-            context, config = self.leave(context, config)
+            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
-            context, config = self.leave(context, config)
+            context, config = self.leave(context, config, callbacks)
             if jump.target is None or jump.target is self:
                 async for i in jump.chain.astream(context, generate, **config):
                     yield i
@@ -233,7 +243,7 @@ class Node(Loader, Interruptable):
     ):
         self.template = Template(template) if isinstance(template, str) else template
         self._context = partial_context
-        self.callbacks: list[AbstractCallback] = []
+        self.callbacks: list[AbstractCallback | type[AbstractCallback]] = []
         self.llm = llm
         self.run_config = config
 
@@ -249,7 +259,7 @@ class Node(Loader, Interruptable):
 
     @property
     def callback(self):
-        def wrapper(callback_class: type[Callback]):
+        def wrapper(callback_class: type[AbstractCallback]):
             self.callbacks.append(callback_class())
             return callback_class
 
@@ -271,15 +281,17 @@ class Node(Loader, Interruptable):
 
         return wrapper
 
-    def _apply_pre_processes(self, context):
-        for callback in self.callbacks:
+    @staticmethod
+    def _apply_pre_processes(context, callbacks: list[AbstractCallback]):
+        for callback in callbacks:
             context |= callback.pre_process(context) or {}
 
-    def _apply_post_processes(self, context):
-        for callback in self.callbacks:
+    @staticmethod
+    def _apply_post_processes(context, callbacks: list[AbstractCallback]):
+        for callback in callbacks:
             context |= callback.post_process(context) or {}
 
-    def _invoke(self, context, /, complete=None, **config):
+    def _invoke(self, context, /, complete, callbacks, **config):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
@@ -287,9 +299,9 @@ class Node(Loader, Interruptable):
 
         context.result = complete(prompt, **self.run_config, **config)
 
-        self._apply_post_processes(context)
+        self._apply_post_processes(context, callbacks)
 
-    def _stream(self, context, /, generate=None, **config):
+    def _stream(self, context, /, generate, callbacks, **config):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
@@ -298,18 +310,20 @@ class Node(Loader, Interruptable):
         context.result = ""
         for delta in generate(prompt, **self.run_config, **config):  # type: ignore
             context.result += delta
-            self._apply_post_processes(context)
+            self._apply_post_processes(context, callbacks)
             yield context
 
-    async def _apply_async_pre_processes(self, context):
-        for callback in self.callbacks:
+    @staticmethod
+    async def _apply_async_pre_processes(context, callbacks: list[AbstractCallback]):
+        for callback in callbacks:
             context |= await resolve(callback.pre_process(context)) or {}
 
-    async def _apply_async_post_processes(self, context):
-        for callback in self.callbacks:
+    @staticmethod
+    async def _apply_async_post_processes(context, callbacks: list[AbstractCallback]):
+        for callback in callbacks:
             context |= await resolve(callback.post_process(context)) or {}
 
-    async def _ainvoke(self, context, /, complete=None, **config):
+    async def _ainvoke(self, context, /, complete, callbacks, **config):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
@@ -317,9 +331,9 @@ class Node(Loader, Interruptable):
 
         context.result = await resolve(complete(prompt, **self.run_config, **config))
 
-        await self._apply_async_post_processes(context)
+        await self._apply_async_post_processes(context, callbacks)
 
-    async def _astream(self, context, /, generate=None, **config):
+    async def _astream(self, context, /, generate, callbacks, **config):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
@@ -328,7 +342,7 @@ class Node(Loader, Interruptable):
         context.result = ""
         async for delta in iterate(generate(prompt, **self.run_config, **config)):
             context.result += delta
-            await self._apply_async_post_processes(context)
+            await self._apply_async_post_processes(context, callbacks)
             yield context
 
     @staticmethod
@@ -341,14 +355,18 @@ class Node(Loader, Interruptable):
         else:
             return self._get_chain_type()(self, chain)
 
-    def render(self, context: Context | None = None):
+    def render(self, context: Context | None = None, callbacks: list[AbstractCallback] | None = None):
+        if callbacks is None:
+            callbacks = ensure_callbacks(self.callbacks)
         context = ChainContext(context, self.context)
-        self._apply_pre_processes(context)
+        self._apply_pre_processes(context, callbacks)
         return self.template.render(context)
 
-    async def arender(self, context: Context | None = None):
+    async def arender(self, context: Context | None = None, callbacks: list[AbstractCallback] | None = None):
+        if callbacks is None:
+            callbacks = ensure_callbacks(self.callbacks)
         context = ChainContext(context, self.context)
-        await self._apply_async_pre_processes(context)
+        await self._apply_async_pre_processes(context, callbacks)
         return await self.template.arender(context)
 
     def __str__(self):
@@ -363,7 +381,7 @@ class Chain(Interruptable):
     ):
         self.nodes = nodes
         self._context = partial_context
-        self.callbacks: list[AbstractCallback] = []
+        self.callbacks: list[AbstractCallback | type[AbstractCallback]] = []
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
@@ -379,19 +397,19 @@ class Chain(Interruptable):
     def __iter__(self):
         return iter(self.nodes)
 
-    def _invoke(self, context, /, complete=None, **config):
+    def _invoke(self, context, /, complete, callbacks: list[AbstractCallback], **config):
         for node in self.nodes:
             node.invoke(context, complete, **config)
 
-    async def _ainvoke(self, context, /, complete=None, **config):
+    async def _ainvoke(self, context, /, complete, callbacks: list[AbstractCallback], **config):
         for node in self.nodes:
             await node.ainvoke(context, complete, **config)
 
-    def _stream(self, context, /, generate=None, **config):
+    def _stream(self, context, /, generate, callbacks: list[AbstractCallback], **config):
         for node in self.nodes:
             yield from node.stream(context, generate, **config)
 
-    async def _astream(self, context, /, generate=None, **config):
+    async def _astream(self, context, /, generate, callbacks: list[AbstractCallback], **config):
         for node in self.nodes:
             async for i in node.astream(context, generate, **config):
                 yield i

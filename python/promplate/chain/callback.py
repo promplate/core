@@ -8,16 +8,16 @@ if TYPE_CHECKING:
 
 class AbstractCallback(Protocol):
     def pre_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
-        ...
+        pass
 
     def post_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
-        ...
+        pass
 
     def on_enter(self, context: Context | None, config: Context) -> tuple[Context | None, Context]:
-        ...
+        return context, config
 
     def on_leave(self, context: "ChainContext", config: Context) -> tuple["ChainContext", Context]:
-        ...
+        return context, config
 
 
 class Callback(AbstractCallback):
