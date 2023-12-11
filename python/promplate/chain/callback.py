@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from .node import AsyncProcess, ChainContext, Process
 
 
-class AbstractCallback(Protocol):
+class BaseCallback(Protocol):
     def pre_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
         pass
 
@@ -20,7 +20,7 @@ class AbstractCallback(Protocol):
         return context, config
 
 
-class Callback(AbstractCallback):
+class Callback(BaseCallback):
     def __init__(
         self,
         *,

@@ -3,7 +3,7 @@ from operator import setitem
 from pytest import raises
 
 from promplate import Node
-from promplate.chain.callback import AbstractCallback, Callback
+from promplate.chain.callback import BaseCallback, Callback
 
 
 def test_add_callback_by_lambda():
@@ -21,7 +21,7 @@ def test_add_callback_by_decorator_1():
     node = Node("{{ b }}")
 
     @node.callback
-    class _(AbstractCallback):
+    class _(BaseCallback):
         def pre_process(self, context):
             context["b"] = 2
 
@@ -32,7 +32,7 @@ def test_add_callback_by_decorator_2():
     node = Node("{{ b }}")
 
     @node.callback
-    class _(AbstractCallback):
+    class _(BaseCallback):
         def pre_process(self, context):
             return {"b": 2}
 
@@ -42,7 +42,7 @@ def test_add_callback_by_decorator_2():
 def test_add_class_as_callback():
     node = Node("{{ value }}")
 
-    class MyCallback(AbstractCallback):
+    class MyCallback(BaseCallback):
         def on_enter(self, context, config):
             return (context or {}) | {"value": 1}, config
 

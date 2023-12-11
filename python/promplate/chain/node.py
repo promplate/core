@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, overload
 from ..llm.base import *
 from ..llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
 from ..prompt.template import Context, Loader, Template
-from .callback import AbstractCallback, Callback
+from .callback import BaseCallback, Callback
 from .utils import iterate, resolve
 
 
@@ -95,7 +95,7 @@ class AbstractChain(Protocol):
         ...
 
 
-def ensure_callbacks(callbacks: list[AbstractCallback | type[AbstractCallback]]) -> list[AbstractCallback]:
+def ensure_callbacks(callbacks: list[BaseCallback | type[BaseCallback]]) -> list[BaseCallback]:
     return [i() if isclass(i) else i for i in callbacks]
 
 
@@ -105,7 +105,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         complete: Complete | None,
-        callbacks: list[AbstractCallback],
+        callbacks: list[BaseCallback],
         **config,
     ):
         ...
@@ -115,7 +115,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         complete: Complete | AsyncComplete | None,
-        callbacks: list[AbstractCallback],
+        callbacks: list[BaseCallback],
         **config,
     ):
         ...
@@ -125,7 +125,7 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         generate: Generate | None,
-        callbacks: list[AbstractCallback],
+        callbacks: list[BaseCallback],
         **config,
     ) -> Iterable:
         ...
@@ -135,20 +135,20 @@ class Interruptable(AbstractChain, Protocol):
         context: ChainContext,
         /,
         generate: Generate | AsyncGenerate | None,
-        callbacks: list[AbstractCallback],
+        callbacks: list[BaseCallback],
         **config,
     ) -> AsyncIterable:
         ...
 
-    callbacks: list[AbstractCallback | type[AbstractCallback]]
+    callbacks: list[BaseCallback | type[BaseCallback]]
 
     def enter(self, context: Context | None, config: Context):
-        callbacks: list[AbstractCallback] = ensure_callbacks(self.callbacks)
+        callbacks: list[BaseCallback] = ensure_callbacks(self.callbacks)
         for callback in callbacks:
             context, config = callback.on_enter(context, config)
         return context, config, callbacks
 
-    def leave(self, context: ChainContext, config: Context, callbacks: list[AbstractCallback]):
+    def leave(self, context: ChainContext, config: Context, callbacks: list[BaseCallback]):
         for callback in reversed(callbacks):
             context, config = callback.on_leave(context, config)
         return context, config
@@ -243,7 +243,7 @@ class Node(Loader, Interruptable):
     ):
         self.template = Template(template) if isinstance(template, str) else template
         self._context = partial_context
-        self.callbacks: list[AbstractCallback | type[AbstractCallback]] = []
+        self.callbacks: list[BaseCallback | type[BaseCallback]] = []
         self.llm = llm
         self.run_config = config
 
@@ -259,7 +259,7 @@ class Node(Loader, Interruptable):
 
     @property
     def callback(self):
-        def wrapper(callback_class: type[AbstractCallback]):
+        def wrapper(callback_class: type[BaseCallback]):
             self.callbacks.append(callback_class())
             return callback_class
 
@@ -282,12 +282,12 @@ class Node(Loader, Interruptable):
         return wrapper
 
     @staticmethod
-    def _apply_pre_processes(context, callbacks: list[AbstractCallback]):
+    def _apply_pre_processes(context, callbacks: list[BaseCallback]):
         for callback in callbacks:
             context |= callback.pre_process(context) or {}
 
     @staticmethod
-    def _apply_post_processes(context, callbacks: list[AbstractCallback]):
+    def _apply_post_processes(context, callbacks: list[BaseCallback]):
         for callback in callbacks:
             context |= callback.post_process(context) or {}
 
@@ -314,12 +314,12 @@ class Node(Loader, Interruptable):
             yield context
 
     @staticmethod
-    async def _apply_async_pre_processes(context, callbacks: list[AbstractCallback]):
+    async def _apply_async_pre_processes(context, callbacks: list[BaseCallback]):
         for callback in callbacks:
             context |= await resolve(callback.pre_process(context)) or {}
 
     @staticmethod
-    async def _apply_async_post_processes(context, callbacks: list[AbstractCallback]):
+    async def _apply_async_post_processes(context, callbacks: list[BaseCallback]):
         for callback in callbacks:
             context |= await resolve(callback.post_process(context)) or {}
 
@@ -355,14 +355,14 @@ class Node(Loader, Interruptable):
         else:
             return self._get_chain_type()(self, chain)
 
-    def render(self, context: Context | None = None, callbacks: list[AbstractCallback] | None = None):
+    def render(self, context: Context | None = None, callbacks: list[BaseCallback] | None = None):
         if callbacks is None:
             callbacks = ensure_callbacks(self.callbacks)
         context = ChainContext(context, self.context)
         self._apply_pre_processes(context, callbacks)
         return self.template.render(context)
 
-    async def arender(self, context: Context | None = None, callbacks: list[AbstractCallback] | None = None):
+    async def arender(self, context: Context | None = None, callbacks: list[BaseCallback] | None = None):
         if callbacks is None:
             callbacks = ensure_callbacks(self.callbacks)
         context = ChainContext(context, self.context)
@@ -381,7 +381,7 @@ class Chain(Interruptable):
     ):
         self.nodes = nodes
         self._context = partial_context
-        self.callbacks: list[AbstractCallback | type[AbstractCallback]] = []
+        self.callbacks: list[BaseCallback | type[BaseCallback]] = []
 
     def next(self, chain: AbstractChain):
         if isinstance(chain, Node):
@@ -397,19 +397,19 @@ class Chain(Interruptable):
     def __iter__(self):
         return iter(self.nodes)
 
-    def _invoke(self, context, /, complete, callbacks: list[AbstractCallback], **config):
+    def _invoke(self, context, /, complete, callbacks: list[BaseCallback], **config):
         for node in self.nodes:
             node.invoke(context, complete, **config)
 
-    async def _ainvoke(self, context, /, complete, callbacks: list[AbstractCallback], **config):
+    async def _ainvoke(self, context, /, complete, callbacks: list[BaseCallback], **config):
         for node in self.nodes:
             await node.ainvoke(context, complete, **config)
 
-    def _stream(self, context, /, generate, callbacks: list[AbstractCallback], **config):
+    def _stream(self, context, /, generate, callbacks: list[BaseCallback], **config):
         for node in self.nodes:
             yield from node.stream(context, generate, **config)
 
-    async def _astream(self, context, /, generate, callbacks: list[AbstractCallback], **config):
+    async def _astream(self, context, /, generate, callbacks: list[BaseCallback], **config):
         for node in self.nodes:
             async for i in node.astream(context, generate, **config):
                 yield i
