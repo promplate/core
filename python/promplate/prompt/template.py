@@ -1,7 +1,7 @@
-from copy import copy
+from collections import ChainMap
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from .builder import *
 from .utils import *
@@ -111,7 +111,7 @@ class TemplateCore(AutoNaming):
         return self._builder.get_render_function().__code__
 
     def render(self, context: Context) -> str:
-        return eval(self._render_code, copy(context))
+        return eval(self._render_code, context)
 
     @cached_property
     def _arender_code(self):
@@ -119,7 +119,7 @@ class TemplateCore(AutoNaming):
         return self._builder.get_render_function().__code__
 
     async def arender(self, context: Context) -> str:
-        return await eval(self._arender_code, copy(context))
+        return await eval(self._arender_code, context)
 
     def get_script(self, sync=True):
         """compile template string into python script"""
@@ -176,13 +176,35 @@ class Loader(AutoNaming):
         return obj
 
 
+class SafeChainMapContext(ChainMap, dict):
+    if TYPE_CHECKING:  # fix type from `collections.ChainMap`
+        from sys import version_info
+
+        if version_info >= (3, 11):
+            from typing_extensions import Self
+        else:
+            from typing import Self
+
+        copy: Callable[[Self], Self]
+
+
 class Template(TemplateCore, Loader):
     def __init__(self, text: str, /, context: Context | None = None):
         super().__init__(text)
         self.context = {} if context is None else context
 
     def render(self, context: Context | None = None):
-        return super().render(self.context | (context or {}))
+        if context is None:
+            context = SafeChainMapContext(get_clean_global_builtins(), self.context)
+        else:
+            context = SafeChainMapContext(get_clean_global_builtins(), context, self.context)
+
+        return super().render(context)
 
     async def arender(self, context: Context | None = None):
-        return await super().arender(self.context | (context or {}))
+        if context is None:
+            context = SafeChainMapContext(get_clean_global_builtins(), self.context)
+        else:
+            context = SafeChainMapContext(get_clean_global_builtins(), context, self.context)
+
+        return await super().arender(context)

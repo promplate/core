@@ -1,15 +1,14 @@
-from collections import ChainMap
 from inspect import isclass
-from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, overload
+from typing import Callable, Mapping, MutableMapping, overload
 
 from ..llm.base import *
 from ..llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
-from ..prompt.template import Context, Loader, Template
+from ..prompt.template import Context, Loader, SafeChainMapContext, Template
 from .callback import BaseCallback, Callback
 from .utils import iterate, resolve
 
 
-class ChainContext(ChainMap, dict):
+class ChainContext(SafeChainMapContext):
     @overload
     def __init__(self):
         ...
@@ -40,16 +39,6 @@ class ChainContext(ChainMap, dict):
     @result.deleter
     def result(self):
         self.__delitem__("__result__")
-
-    if TYPE_CHECKING:  # fix type from `collections.ChainMap`
-        from sys import version_info
-
-        if version_info >= (3, 11):
-            from typing_extensions import Self
-        else:
-            from typing import Self
-
-        copy: Callable[[Self], Self]
 
 
 Process = Callable[[ChainContext], Context | None]

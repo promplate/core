@@ -1,6 +1,7 @@
-from functools import cached_property
+from functools import cached_property, wraps
 from inspect import currentframe
 from re import compile
+from typing import Callable, ParamSpec, TypeVar
 
 split_template_tokens = compile(
     r"(\s{%-.*?-%}\s|\s{{-.*?-}}\s|\s{#-.*?-#}\s|\s{%-.*?%}|\s{{-.*?}}|\s{#-.*?#}|{%.*?-%}\s|{{.*?-}}\s|{#.*?-#}\s|{%.*?%}|{{.*?}}|{#.*?#})"
@@ -65,3 +66,26 @@ class AutoNaming:
 
     def __str__(self):
         return f"<{self.name}>"
+
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def cache_once(func: Callable[P, T]) -> Callable[P, T]:
+    result = None
+
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        nonlocal result
+        if result is None:
+            result = func(*args, **kwargs)
+        return result
+
+    return wrapper
+
+
+@cache_once
+def get_clean_global_builtins():
+    exec("", env := {})
+    return env["__builtins__"]

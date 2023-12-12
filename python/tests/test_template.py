@@ -1,4 +1,6 @@
-"""Tests for the syntax of promplate."""
+"""Tests for the template syntax."""
+
+from collections import defaultdict
 
 from pytest import raises
 
@@ -302,3 +304,15 @@ def test_multi_line_tags():
     render_assert("{# \n # hello world \n #}", expected="")
     render_assert("{# \n _ = { i for i in range(5) } \n #}", expected="")
     render_assert("{# \n a = [ i for i in range(5) ] \n #}{{ a }}", expected=str(list(range(5))))
+
+
+def test_lazy_default_context():
+    assert Template("{{ whatever }}", defaultdict(list)).render(None) == "[]"
+
+
+def test_lazy_input_context():
+    class Boundary(dict):
+        def __missing__(self, key):
+            return key
+
+    render_assert("{{ whatever }}", Boundary(), "whatever")
