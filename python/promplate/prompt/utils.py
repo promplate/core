@@ -86,5 +86,5 @@ def cache_once(func: Callable[P, T]) -> Callable[P, T]:
 
 
 @cache_once
-def get_clean_global_builtins() -> dict[str, Any]:
+def get_builtins() -> dict[str, Any]:
     return __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__

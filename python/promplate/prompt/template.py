@@ -195,16 +195,16 @@ class Template(TemplateCore, Loader):
 
     def render(self, context: Context | None = None):
         if context is None:
-            context = SafeChainMapContext(get_clean_global_builtins(), self.context)
+            context = SafeChainMapContext({}, self.context)
         else:
-            context = SafeChainMapContext(get_clean_global_builtins(), context, self.context)
+            context = SafeChainMapContext({}, context, self.context)
 
         return super().render(context)
 
     async def arender(self, context: Context | None = None):
         if context is None:
-            context = SafeChainMapContext(get_clean_global_builtins(), self.context)
+            context = SafeChainMapContext({}, self.context)
         else:
-            context = SafeChainMapContext(get_clean_global_builtins(), context, self.context)
+            context = SafeChainMapContext({}, context, self.context)
 
         return await super().arender(context)

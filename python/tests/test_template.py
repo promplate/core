@@ -5,6 +5,7 @@ from collections import defaultdict
 from pytest import raises
 
 from promplate import Node, Template
+from promplate.prompt.utils import get_builtins
 
 
 def render_assert(text: str, context: dict | None = None, expected: str | None = None):
@@ -307,7 +308,7 @@ def test_multi_line_tags():
 
 
 def test_lazy_default_context():
-    assert Template("{{ whatever }}", defaultdict(list)).render(None) == "[]"
+    assert Template("{{ whatever }}", defaultdict(list)).render(get_builtins()) == "[]"
 
 
 def test_lazy_input_context():
@@ -315,4 +316,10 @@ def test_lazy_input_context():
         def __missing__(self, key):
             return key
 
-    render_assert("{{ whatever }}", Boundary(), "whatever")
+    render_assert("{{ whatever }}", Boundary(get_builtins()), "whatever")
+
+
+def test_context_unchanged_after_rendering():
+    context = {}
+    Template("{# a = 1 #}{# globals()['b'] = 2 #}").render(context)
+    assert context == {}
