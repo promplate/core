@@ -37,11 +37,11 @@ class TemplateCore(AutoNaming):
         return token.strip()[2:-2].strip("-").strip()
 
     def _on_literal_token(self, token: str):
-        self._buffer.append(f"append_result({repr(token)})")
+        self._buffer.append(f"__append__({repr(token)})")
 
     def _on_eval_token(self, token):
         exp = self._unwrap_token(token)
-        self._buffer.append(f"append_result({exp})")
+        self._buffer.append(f"__append__({exp})")
 
     def _on_exec_token(self, token):
         exp = self._unwrap_token(token)
@@ -74,15 +74,15 @@ class TemplateCore(AutoNaming):
             else:
                 params: str = self._make_context(inner)
                 if sync:
-                    self._buffer.append(f"append_result({op}.render({params}))")
+                    self._buffer.append(f"__append__({op}.render({params}))")
                 else:
-                    self._buffer.append(f"append_result(await {op}.arender({params}))")
+                    self._buffer.append(f"__append__(await {op}.arender({params}))")
 
     @staticmethod
     def _make_context(text: str):
         """generate context parameter if specified otherwise use locals() by default"""
 
-        return f"dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
+        return f"locals() | dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
 
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)
@@ -102,7 +102,7 @@ class TemplateCore(AutoNaming):
             raise SyntaxError(self._ops_stack)
 
         self._flush()
-        self._builder.add_line("return ''.join(map(str, result))")
+        self._builder.add_line("return ''.join(map(str, __parts__))")
         self._builder.dedent()
 
     @cached_property

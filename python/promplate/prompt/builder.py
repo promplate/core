@@ -54,6 +54,6 @@ def get_base_builder(sync=True):
         CodeBuilder()
         .add_line("def render():" if sync else "async def render():")
         .indent()
-        .add_line("result = []")
-        .add_line("append_result = result.append")
+        .add_line("__parts__ = []")
+        .add_line("__append__ = __parts__.append")
     )

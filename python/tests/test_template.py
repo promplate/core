@@ -338,3 +338,7 @@ async def test_async_generator():
         yield 3
 
     assert await Template("{{ [ i async for i in gen() ] }}").arender({"gen": gen}) == str([1, 2, 3])
+
+
+def test_components_context():
+    assert Template("{% a b=1, c=2 %}").render({"a": Template("{{ b }}{{ c }}{{ d }}"), "d": 3}) == "123"
