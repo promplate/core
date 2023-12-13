@@ -340,5 +340,25 @@ async def test_async_generator():
     assert await Template("{{ [ i async for i in gen() ] }}").arender({"gen": gen}) == str([1, 2, 3])
 
 
+@mark.asyncio
+async def test_await():
+    async def f():
+        return 123
+
+    assert await Template("{{ await corr }}{{ await func() }}").arender({"corr": f(), "func": f}) == "123123"
+
+
 def test_components_context():
     assert Template("{% a b=1, c=2 %}").render({"a": Template("{{ b }}{{ c }}{{ d }}"), "d": 3}) == "123"
+
+
+def test_else_tag_in_for_loop():
+    render_assert("{% for i in '123' %}{{ i }}{% else %}4{% endfor %}", None, "1234")
+
+
+def test_elif_tag():
+    render_assert("{% if 0 %}0{% elif 1 %}1{% else %}2{% endif %}", None, "1")
+
+
+def test_while_loop():
+    render_assert("{% while nums %}{{ nums.pop() }}{% else %}!{% endwhile %}", {"nums": [1, 2, 3]}, "321!")
