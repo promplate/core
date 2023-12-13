@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from pytest import raises
+from pytest import mark, raises
 
 from promplate import Node, Template
 from promplate.prompt.utils import get_builtins
@@ -323,3 +323,18 @@ def test_context_unchanged_after_rendering():
     context = {}
     Template("{# a = 1 #}{# globals()['b'] = 2 #}").render(context)
     assert context == {}
+
+
+@mark.asyncio
+async def test_arender():
+    return await Template("{{ 123 }}").arender() == "123"
+
+
+@mark.asyncio
+async def test_async_generator():
+    async def gen():
+        yield 1
+        yield 2
+        yield 3
+
+    assert await Template("{{ [ i async for i in gen() ] }}").arender({"gen": gen}) == str([1, 2, 3])
