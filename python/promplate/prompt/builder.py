@@ -1,3 +1,6 @@
+from types import FunctionType
+
+
 class CodeBuilder:
     """Build source code conveniently."""
 
@@ -37,7 +40,7 @@ class CodeBuilder:
 
         return self
 
-    def get_render_function(self):
+    def get_render_function(self) -> FunctionType:
         """Execute the code, and return a dict of globals it defines."""
         assert self.indent_level == 0
         python_source = str(self)
@@ -49,7 +52,7 @@ class CodeBuilder:
 def get_base_builder(sync=True):
     return (
         CodeBuilder()
-        .add_line("def render():" if sync else "async def render():")
+        .add_line("def render():" if sync else "async def arender():")
         .indent()
         .add_line("result = []")
         .add_line("append_result = result.append")

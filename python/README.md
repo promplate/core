@@ -27,7 +27,9 @@ I try to make the syntax compatible with `Jinja2`. So for now I recommend using 
 
 - [ ] more documentation
 - [ ] javascript implementation
-- [ ] error handling
+- [ ] improve error handling
+  - possible ways would be similar to [`Jinja2`](https://github.com/pallets/jinja/blob/main/src/jinja2/debug.py)
 - [x] streaming support
-- [ ] more unit tests
+- [x] unit tests
+  - coverage report [here](https://promplate-python-coverage.onrender.com/)
 - [ ] the order of callbacks matters

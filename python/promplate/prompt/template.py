@@ -108,7 +108,7 @@ class TemplateCore(AutoNaming):
     @cached_property
     def _render_code(self):
         self.compile()
-        return self._builder.get_render_function().__code__
+        return self._builder.get_render_function().__code__.replace(co_filename=str(self))
 
     def render(self, context: Context) -> str:
         return eval(self._render_code, context)
@@ -116,7 +116,7 @@ class TemplateCore(AutoNaming):
     @cached_property
     def _arender_code(self):
         self.compile(sync=False)
-        return self._builder.get_render_function().__code__
+        return self._builder.get_render_function().__code__.replace(co_filename=str(self))
 
     async def arender(self, context: Context) -> str:
         return await eval(self._arender_code, context)
