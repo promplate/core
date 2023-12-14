@@ -1,7 +1,7 @@
 from copy import copy
 from functools import cached_property
 from types import MappingProxyType
-from typing import Any, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 
 from openai import AsyncClient, Client  # type: ignore
 
@@ -19,8 +19,7 @@ def same_params_as(_: Callable[P, Any]):
     return func
 
 
-class ClientConfig(Configurable):
-    @same_params_as(Client)
+class Config(Configurable):
     def __init__(self, **config):
         super().__init__(**config)
         self._run_config = {}
@@ -43,6 +42,22 @@ class ClientConfig(Configurable):
         return AsyncClient(**self._config)
 
 
+if TYPE_CHECKING:
+
+    class ClientConfig(Config):
+        @same_params_as(Client)
+        def __init__(self, **config):
+            ...
+
+    class AsyncClientConfig(Config):
+        @same_params_as(AsyncClient)
+        def __init__(self, **config):
+            ...
+
+else:
+    ClientConfig = AsyncClientConfig = Config
+
+
 class TextComplete(ClientConfig):
     def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": False, "prompt": text}
@@ -50,7 +65,7 @@ class TextComplete(ClientConfig):
         return result.choices[0].text
 
 
-class AsyncTextComplete(ClientConfig):
+class AsyncTextComplete(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": False, "prompt": text}
         result = await self.aclient.completions.create(**config)
@@ -65,7 +80,7 @@ class TextGenerate(ClientConfig):
             yield event.choices[0].text
 
 
-class AsyncTextGenerate(ClientConfig):
+class AsyncTextGenerate(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": True, "prompt": text}
         stream = await self.aclient.completions.create(**config)
@@ -81,7 +96,7 @@ class ChatComplete(ClientConfig):
         return result.choices[0].message.content
 
 
-class AsyncChatComplete(ClientConfig):
+class AsyncChatComplete(AsyncClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": False, "messages": messages}
@@ -98,7 +113,7 @@ class ChatGenerate(ClientConfig):
             yield event.choices[0].delta.content or ""
 
 
-class AsyncChatGenerate(ClientConfig):
+class AsyncChatGenerate(AsyncClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": True, "messages": messages}
@@ -112,7 +127,7 @@ class SyncTextOpenAI(ClientConfig, LLM):
     generate: TextGenerate = TextGenerate.__call__  # type: ignore
 
 
-class AsyncTextOpenAI(ClientConfig, LLM):
+class AsyncTextOpenAI(AsyncClientConfig, LLM):
     complete: AsyncTextComplete = AsyncTextComplete.__call__  # type: ignore
     generate: AsyncTextGenerate = AsyncTextGenerate.__call__  # type: ignore
 
@@ -122,6 +137,6 @@ class SyncChatOpenAI(ClientConfig, LLM):
     generate: ChatGenerate = ChatGenerate.__call__  # type: ignore
 
 
-class AsyncChatOpenAI(ClientConfig, LLM):
+class AsyncChatOpenAI(AsyncClientConfig, LLM):
     complete: AsyncChatComplete = AsyncChatComplete.__call__  # type: ignore
     generate: AsyncChatGenerate = AsyncChatGenerate.__call__  # type: ignore
