@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.0b6"
+version = "0.3.0rc1"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
 repository = "https://github.com/promplate/core"
@@ -9,7 +9,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["prompt", "template", "nlp", "llm"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Text Processing :: Markup",
     "Typing :: Typed",

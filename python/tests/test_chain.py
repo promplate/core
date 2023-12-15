@@ -1,5 +1,4 @@
-from promplate import Chain, ChainContext, Node
-from promplate.chain.node import JumpTo, Loop
+from promplate import Chain, ChainContext, JumpTo, Loop, Node
 
 
 def as_is(prompt: str, **_):

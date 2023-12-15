@@ -2,8 +2,7 @@ from operator import setitem
 
 from pytest import mark, raises
 
-from promplate import Node
-from promplate.chain.callback import BaseCallback, Callback
+from promplate import BaseCallback, Callback, Node
 
 
 def test_add_callback_by_lambda():
