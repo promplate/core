@@ -1,6 +1,6 @@
 from operator import setitem
 
-from pytest import raises
+from pytest import mark, raises
 
 from promplate import Node
 from promplate.chain.callback import BaseCallback, Callback
@@ -51,10 +51,36 @@ def test_add_class_as_callback():
 
 def test_node_invoke():
     node = Node("{{ a }}")
-
     complete = lambda prompt, **_: prompt
-
     assert node.invoke({"a": 1}, complete).result == "1"
+
+
+@mark.asyncio
+async def test_node_ainvoke():
+    node = Node("{{ b }}")
+    complete = lambda prompt, **_: prompt
+    assert (await node.ainvoke({"b": 2}, complete)).result == "2"
+
+
+def test_node_stream():
+    node = Node("{{ nums }}")
+
+    def generate(prompt, **_):
+        yield from prompt
+
+    for i, context in enumerate(node.stream({"nums": 1234}, generate), 1):
+        assert i == int(context.result[-1])
+
+
+@mark.asyncio
+async def test_node_astream():
+    node = Node("{{ nums }}")
+
+    async def generate(prompt, **_):
+        for i in prompt:
+            yield i
+
+    assert [int(i.result) async for i in node.astream({"nums": 123}, generate)] == [1, 12, 123]
 
 
 def test_context_behavior():

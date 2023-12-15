@@ -180,7 +180,7 @@ class Interruptable(AbstractChain, Protocol):
             context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.target is None or jump.target is self:
+            if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 jump.chain.invoke(context, complete, **config)
             else:
                 raise jump from None
@@ -196,7 +196,7 @@ class Interruptable(AbstractChain, Protocol):
             context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.target is None or jump.target is self:
+            if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 await jump.chain.ainvoke(context, complete, **config)
             else:
                 raise jump from None
@@ -213,7 +213,7 @@ class Interruptable(AbstractChain, Protocol):
             context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.target is None or jump.target is self:
+            if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 yield from jump.chain.stream(context, generate, **config)
             else:
                 raise jump from None
@@ -228,7 +228,7 @@ class Interruptable(AbstractChain, Protocol):
             context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.target is None or jump.target is self:
+            if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 async for i in jump.chain.astream(context, generate, **config):
                     yield i
             else:
@@ -454,11 +454,11 @@ class JumpTo(Exception):
         self,
         chain: Interruptable,
         context: Context | None = None,
-        target: Interruptable | None = None,
+        bubble_up_to: Interruptable | None = None,
     ):
         self.chain = chain
         self.context = context
-        self.target = target
+        self.bubble_up_to = bubble_up_to
 
     def __str__(self):
-        return f"{self.target} does not exist in the hierarchy"
+        return f"{self.bubble_up_to} does not exist in the hierarchy"
