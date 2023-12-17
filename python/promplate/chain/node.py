@@ -177,13 +177,14 @@ class Interruptable(AbstractChain, Protocol):
 
         try:
             self._invoke(ChainContext(context, self.context), complete, callbacks, **config)
-            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 jump.chain.invoke(context, complete, **config)
             else:
                 raise jump from None
+        else:
+            context, config = self.leave(context, config, callbacks)
 
         return context
 
@@ -193,13 +194,14 @@ class Interruptable(AbstractChain, Protocol):
 
         try:
             await self._ainvoke(ChainContext(context, self.context), complete, callbacks, **config)
-            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 await jump.chain.ainvoke(context, complete, **config)
             else:
                 raise jump from None
+        else:
+            context, config = self.leave(context, config, callbacks)
 
         return context
 
@@ -210,13 +212,14 @@ class Interruptable(AbstractChain, Protocol):
         try:
             for _ in self._stream(ChainContext(context, self.context), generate, callbacks, **config):
                 yield context
-            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
                 yield from jump.chain.stream(context, generate, **config)
             else:
                 raise jump from None
+        else:
+            context, config = self.leave(context, config, callbacks)
 
     async def astream(self, context=None, /, generate=None, **config) -> AsyncIterable[ChainContext]:
         context, config, callbacks = self.enter(context, config)
@@ -225,7 +228,6 @@ class Interruptable(AbstractChain, Protocol):
         try:
             async for _ in self._astream(ChainContext(context, self.context), generate, callbacks, **config):
                 yield context
-            context, config = self.leave(context, config, callbacks)
         except JumpTo as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
@@ -233,6 +235,8 @@ class Interruptable(AbstractChain, Protocol):
                     yield i
             else:
                 raise jump from None
+        else:
+            context, config = self.leave(context, config, callbacks)
 
     _context: Context | None
 
