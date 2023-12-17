@@ -177,10 +177,11 @@ class Interruptable(AbstractChain, Protocol):
 
         try:
             self._invoke(ChainContext(context, self.context), complete, callbacks, **config)
-        except JumpTo as jump:
+        except Jump as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                jump.chain.invoke(context, complete, **config)
+                if jump.to is not None:
+                    jump.to.invoke(context, complete, **config)
             else:
                 raise jump from None
         else:
@@ -194,10 +195,11 @@ class Interruptable(AbstractChain, Protocol):
 
         try:
             await self._ainvoke(ChainContext(context, self.context), complete, callbacks, **config)
-        except JumpTo as jump:
+        except Jump as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                await jump.chain.ainvoke(context, complete, **config)
+                if jump.to is not None:
+                    await jump.to.ainvoke(context, complete, **config)
             else:
                 raise jump from None
         else:
@@ -212,10 +214,11 @@ class Interruptable(AbstractChain, Protocol):
         try:
             for _ in self._stream(ChainContext(context, self.context), generate, callbacks, **config):
                 yield context
-        except JumpTo as jump:
+        except Jump as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                yield from jump.chain.stream(context, generate, **config)
+                if jump.to is not None:
+                    yield from jump.to.stream(context, generate, **config)
             else:
                 raise jump from None
         else:
@@ -228,11 +231,12 @@ class Interruptable(AbstractChain, Protocol):
         try:
             async for _ in self._astream(ChainContext(context, self.context), generate, callbacks, **config):
                 yield context
-        except JumpTo as jump:
+        except Jump as jump:
             context, config = self.leave(context, config, callbacks)
             if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                async for i in jump.chain.astream(context, generate, **config):
-                    yield i
+                if jump.to is not None:
+                    async for i in jump.to.astream(context, generate, **config):
+                        yield i
             else:
                 raise jump from None
         else:
@@ -354,14 +358,14 @@ class Node(Loader, Interruptable):
     def render(self, context: Context | None = None, callbacks: list[BaseCallback] | None = None):
         if callbacks is None:
             callbacks = ensure_callbacks(self.callbacks)
-        context = ChainContext(context, self.context)  # todo: not necessary
+        context = ChainContext(context, self.context)
         self._apply_pre_processes(context, callbacks)
         return self.template.render(context)
 
     async def arender(self, context: Context | None = None, callbacks: list[BaseCallback] | None = None):
         if callbacks is None:
             callbacks = ensure_callbacks(self.callbacks)
-        context = ChainContext(context, self.context)  # todo: not necessary
+        context = ChainContext(context, self.context)
         await self._apply_async_pre_processes(context, callbacks)
         return await self.template.arender(context)
 
@@ -453,15 +457,13 @@ class Chain(Interruptable):
         return " + ".join(map(str, self.nodes))
 
 
-class JumpTo(Exception):
+class Jump(Exception):
     def __init__(
         self,
-        chain: Interruptable,
-        context: Context | None = None,
+        to: Interruptable | None = None,
         bubble_up_to: Interruptable | None = None,
     ):
-        self.chain = chain
-        self.context = context
+        self.to = to
         self.bubble_up_to = bubble_up_to
 
     def __str__(self):

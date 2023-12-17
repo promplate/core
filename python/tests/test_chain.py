@@ -1,4 +1,4 @@
-from promplate import Chain, ChainContext, JumpTo, Loop, Node
+from promplate import Chain, ChainContext, Jump, Loop, Node
 
 
 def as_is(prompt: str, **_):
@@ -27,16 +27,28 @@ def test_chain_ior():
     assert chain.invoke(complete=as_is).result == "abc"
 
 
+def test_chain_break():
+    a = Node("0")
+    b = Node("1")
+
+    chain = a + b
+
+    @a.post_process
+    def _(_):
+        raise Jump(bubble_up_to=chain)
+
+    assert chain.invoke(complete=as_is).result == "0"
+
+
 def test_loop_break():
     a = Node("0")
     b = Node("{{ int(__result__) + 1 }}")
-    c = Node("{{ __result__ }}" * 3)
 
     @b.post_process
     def _(context: ChainContext):
         if int(context.result) >= 6:
-            raise JumpTo(c, bubble_up_to=chain)
+            raise Jump(bubble_up_to=chain)
 
     chain = a + Loop(b)
 
-    assert chain.invoke(complete=as_is).result == "666"
+    assert chain.invoke(complete=as_is).result == "6"

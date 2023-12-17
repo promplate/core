@@ -1,2 +1,2 @@
 from .callback import BaseCallback, Callback
-from .node import Chain, ChainContext, JumpTo, Loop, Node
+from .node import Chain, ChainContext, Jump, Loop, Node
