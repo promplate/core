@@ -1,3 +1,5 @@
+from typing import cast
+
 from promplate import Chain, ChainContext, Jump, Loop, Node
 
 
@@ -19,7 +21,7 @@ def test_chain_ior():
 
     chain = a + b
 
-    @b.post_process
+    @b.mid_process
     def _(_):
         nonlocal chain
         chain += c
@@ -33,7 +35,7 @@ def test_chain_break():
 
     chain = a + b
 
-    @a.post_process
+    @a.mid_process
     def _(_):
         raise Jump(bubble_up_to=chain)
 
@@ -44,7 +46,7 @@ def test_loop_break():
     a = Node("0")
     b = Node("{{ int(__result__) + 1 }}")
 
-    @b.post_process
+    @b.mid_process
     def _(context: ChainContext):
         if int(context.result) >= 6:
             raise Jump(bubble_up_to=chain)
@@ -52,3 +54,35 @@ def test_loop_break():
     chain = a + Loop(b)
 
     assert chain.invoke(complete=as_is).result == "6"
+
+
+def test_chain_callback():
+    a = Node("0")
+    b = Node("{{ int(__result__) + 1 }}")
+
+    chain = a + b + b + b
+
+    @chain.mid_process
+    def _(context: ChainContext):
+        if context.result:
+            context["sum"] = context.get("sum", 0) + int(context.result)
+
+    assert chain.invoke(complete=as_is).result == str(0 + 1 + 2)
+
+
+def test_processes():
+    node = Node("")
+
+    @node.mid_process
+    def _(context: ChainContext):
+        cast(list, context["results"]).append(context.result)
+
+    @node.end_process
+    def _(context: ChainContext):
+        cast(list, context["results"]).append("end")
+
+    def zero_to_three(_, **config):
+        yield from map(str, range(4))
+
+    list(node.stream(context := {"results": []}, zero_to_three))
+    assert context["results"] == ["0", "01", "012", "0123", "end"]

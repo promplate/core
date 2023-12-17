@@ -38,16 +38,6 @@ def test_add_callback_by_decorator_2():
     assert node.render() == "2"
 
 
-def test_add_class_as_callback():
-    node = Node("{{ value }}")
-
-    class MyCallback(BaseCallback):
-        def on_enter(self, context, config):
-            return (context or {}) | {"value": 1}, config
-
-    node.callbacks.append(MyCallback)
-
-
 def test_node_invoke():
     node = Node("{{ a }}")
     complete = lambda prompt, **_: prompt
@@ -95,7 +85,10 @@ def test_context_behavior():
 
 
 def test_callbacks_with_states():
-    class Callback(BaseCallback):
+    chain = Node("")
+
+    @chain.callback
+    class _(BaseCallback):
         def on_enter(self, context, config):
             context = {} if context is None else context
             self.entered = True
@@ -103,10 +96,6 @@ def test_callbacks_with_states():
 
         def pre_process(self, context):
             assert self.entered
-
-    chain = Node("")
-
-    chain.callbacks.append(Callback)
 
     with raises(AttributeError):
         chain.render()

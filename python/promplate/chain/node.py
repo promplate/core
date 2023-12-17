@@ -147,9 +147,35 @@ class Interruptable(AbstractChain, Protocol):
 
     def add_pre_processes(self, *processes: Process | AsyncProcess):
         self.callbacks.extend(Callback(pre_process=i) for i in processes)
+        return self
 
-    def add_post_processes(self, *processes: Process | AsyncProcess):
-        self.callbacks.extend(Callback(post_process=i) for i in processes)
+    def add_mid_processes(self, *processes: Process | AsyncProcess):
+        self.callbacks.extend(Callback(mid_process=i) for i in processes)
+        return self
+
+    def add_end_processes(self, *processes: Process | AsyncProcess):
+        self.callbacks.extend(Callback(end_process=i) for i in processes)
+        return self
+
+    def add_callbacks(self, *callbacks: BaseCallback | type[BaseCallback]):
+        self.callbacks.extend(callbacks)
+        return self
+
+    def pre_process(self, process: Process | AsyncProcess):
+        self.add_pre_processes(process)
+        return process
+
+    def mid_process(self, process: Process | AsyncProcess):
+        self.add_mid_processes(process)
+        return process
+
+    def end_process(self, process: Process | AsyncProcess):
+        self.add_end_processes(process)
+        return process
+
+    def callback(self, callback: BaseCallback | type[BaseCallback]):
+        self.add_callbacks(callback)
+        return callback
 
     @staticmethod
     def _apply_pre_processes(context: ChainContext, callbacks: list[BaseCallback]):
@@ -157,9 +183,14 @@ class Interruptable(AbstractChain, Protocol):
             context |= cast(Context, callback.pre_process(context) or {})
 
     @staticmethod
-    def _apply_post_processes(context: ChainContext, callbacks: list[BaseCallback]):
+    def _apply_mid_processes(context: ChainContext, callbacks: list[BaseCallback]):
         for callback in callbacks:
-            context |= cast(Context, callback.post_process(context) or {})
+            context |= cast(Context, callback.mid_process(context) or {})
+
+    @staticmethod
+    def _apply_end_processes(context: ChainContext, callbacks: list[BaseCallback]):
+        for callback in callbacks:
+            context |= cast(Context, callback.end_process(context) or {})
 
     @staticmethod
     async def _apply_async_pre_processes(context: ChainContext, callbacks: list[BaseCallback]):
@@ -167,9 +198,14 @@ class Interruptable(AbstractChain, Protocol):
             context |= cast(Context, await resolve(callback.pre_process(context)) or {})
 
     @staticmethod
-    async def _apply_async_post_processes(context: ChainContext, callbacks: list[BaseCallback]):
+    async def _apply_async_mid_processes(context: ChainContext, callbacks: list[BaseCallback]):
         for callback in callbacks:
-            context |= cast(Context, await resolve(callback.post_process(context)) or {})
+            context |= cast(Context, await resolve(callback.mid_process(context)) or {})
+
+    @staticmethod
+    async def _apply_async_end_processes(context: ChainContext, callbacks: list[BaseCallback]):
+        for callback in callbacks:
+            context |= cast(Context, await resolve(callback.end_process(context)) or {})
 
     def invoke(self, context=None, /, complete=None, **config) -> ChainContext:
         context, config, callbacks = self.enter(context, config)
@@ -277,30 +313,6 @@ class Node(Loader, Interruptable):
         self.llm = llm
         return llm
 
-    @property
-    def callback(self):
-        def wrapper(callback_class: type[BaseCallback]):
-            self.callbacks.append(callback_class())
-            return callback_class
-
-        return wrapper
-
-    @property
-    def pre_process(self):
-        def wrapper(process: Process | AsyncProcess):
-            self.add_pre_processes(process)
-            return process
-
-        return wrapper
-
-    @property
-    def post_process(self):
-        def wrapper(process: Process | AsyncProcess):
-            self.add_post_processes(process)
-            return process
-
-        return wrapper
-
     def _invoke(self, context, /, complete, callbacks, **config):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
@@ -309,7 +321,9 @@ class Node(Loader, Interruptable):
 
         context.result = complete(prompt, **self.run_config, **config)
 
-        self._apply_post_processes(context, callbacks)
+        self._apply_mid_processes(context, callbacks)
+
+        self._apply_end_processes(context, callbacks)
 
     def _stream(self, context, /, generate, callbacks, **config):
         generate = self.llm.generate if self.llm else generate
@@ -320,8 +334,10 @@ class Node(Loader, Interruptable):
         context.result = ""
         for delta in generate(prompt, **self.run_config, **config):  # type: ignore
             context.result += delta
-            self._apply_post_processes(context, callbacks)
+            self._apply_mid_processes(context, callbacks)
             yield
+
+        self._apply_end_processes(context, callbacks)
 
     async def _ainvoke(self, context, /, complete, callbacks, **config):
         complete = self.llm.complete if self.llm else complete
@@ -331,7 +347,9 @@ class Node(Loader, Interruptable):
 
         context.result = await resolve(complete(prompt, **self.run_config, **config))
 
-        await self._apply_async_post_processes(context, callbacks)
+        await self._apply_async_mid_processes(context, callbacks)
+
+        await self._apply_async_end_processes(context, callbacks)
 
     async def _astream(self, context, /, generate, callbacks, **config):
         generate = self.llm.generate if self.llm else generate
@@ -342,8 +360,10 @@ class Node(Loader, Interruptable):
         context.result = ""
         async for delta in iterate(generate(prompt, **self.run_config, **config)):
             context.result += delta
-            await self._apply_async_post_processes(context, callbacks)
+            await self._apply_async_mid_processes(context, callbacks)
             yield
+
+        await self._apply_async_end_processes(context, callbacks)
 
     @staticmethod
     def _get_chain_type():
@@ -383,27 +403,31 @@ class Loop(Interruptable):
         while True:
             self._apply_pre_processes(context, callbacks)
             self.chain.invoke(context, complete, **config)
-            self._apply_post_processes(context, callbacks)
+            self._apply_mid_processes(context, callbacks)
+            self._apply_end_processes(context, callbacks)
 
     async def _ainvoke(self, context, /, complete, callbacks, **config):
         while True:
             await self._apply_async_pre_processes(context, callbacks)
             await self.chain.ainvoke(context, complete, **config)
-            await self._apply_async_post_processes(context, callbacks)
+            await self._apply_async_mid_processes(context, callbacks)
+            await self._apply_async_end_processes(context, callbacks)
 
     def _stream(self, context, /, generate, callbacks, **config):
         while True:
             self._apply_pre_processes(context, callbacks)
             for _ in self.chain.stream(context, generate, **config):
-                self._apply_post_processes(context, callbacks)
+                self._apply_mid_processes(context, callbacks)
                 yield
+            self._apply_end_processes(context, callbacks)
 
     async def _astream(self, context, /, generate, callbacks, **config):
         while True:
             await self._apply_async_pre_processes(context, callbacks)
             async for _ in self.chain.astream(context, generate, **config):
-                await self._apply_async_post_processes(context, callbacks)
+                await self._apply_async_mid_processes(context, callbacks)
                 yield
+            await self._apply_async_end_processes(context, callbacks)
 
 
 class Chain(Interruptable):
@@ -431,27 +455,31 @@ class Chain(Interruptable):
         self._apply_pre_processes(context, callbacks)
         for node in self.nodes:
             node.invoke(context, complete, **config)
-            self._apply_post_processes(context, callbacks)
+            self._apply_mid_processes(context, callbacks)
+        self._apply_end_processes(context, callbacks)
 
     async def _ainvoke(self, context, /, complete, callbacks: list[BaseCallback], **config):
         await self._apply_async_pre_processes(context, callbacks)
         for node in self.nodes:
             await node.ainvoke(context, complete, **config)
-            await self._apply_async_post_processes(context, callbacks)
+            await self._apply_async_mid_processes(context, callbacks)
+        await self._apply_async_end_processes(context, callbacks)
 
     def _stream(self, context, /, generate, callbacks: list[BaseCallback], **config):
         self._apply_pre_processes(context, callbacks)
         for node in self.nodes:
             for _ in node.stream(context, generate, **config):
-                self._apply_post_processes(context, callbacks)
+                self._apply_mid_processes(context, callbacks)
                 yield
+        self._apply_end_processes(context, callbacks)
 
     async def _astream(self, context, /, generate, callbacks: list[BaseCallback], **config):
         await self._apply_async_pre_processes(context, callbacks)
         for node in self.nodes:
             async for _ in node.astream(context, generate, **config):
-                await self._apply_async_post_processes(context, callbacks)
+                await self._apply_async_mid_processes(context, callbacks)
                 yield
+        await self._apply_async_end_processes(context, callbacks)
 
     def __repr__(self):
         return " + ".join(map(str, self.nodes))
