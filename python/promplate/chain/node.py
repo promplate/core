@@ -305,7 +305,7 @@ class Node(Loader, Interruptable):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
-        prompt = self.render(context)
+        prompt = self.render(context, callbacks)
 
         context.result = complete(prompt, **self.run_config, **config)
 
@@ -315,7 +315,7 @@ class Node(Loader, Interruptable):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
-        prompt = self.render(context)
+        prompt = self.render(context, callbacks)
 
         context.result = ""
         for delta in generate(prompt, **self.run_config, **config):  # type: ignore
@@ -327,7 +327,7 @@ class Node(Loader, Interruptable):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
 
-        prompt = await self.arender(context)
+        prompt = await self.arender(context, callbacks)
 
         context.result = await resolve(complete(prompt, **self.run_config, **config))
 
@@ -337,7 +337,7 @@ class Node(Loader, Interruptable):
         generate = self.llm.generate if self.llm else generate
         assert generate is not None
 
-        prompt = await self.arender(context)
+        prompt = await self.arender(context, callbacks)
 
         context.result = ""
         async for delta in iterate(generate(prompt, **self.run_config, **config)):

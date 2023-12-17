@@ -92,3 +92,23 @@ def test_context_behavior():
 
     assert next(it).result == "4"
     assert next(it).result == "3"
+
+
+def test_callbacks_with_states():
+    class Callback(BaseCallback):
+        def on_enter(self, context, config):
+            context = {} if context is None else context
+            self.entered = True
+            return context, config
+
+        def pre_process(self, context):
+            assert self.entered
+
+    chain = Node("")
+
+    chain.callbacks.append(Callback)
+
+    with raises(AttributeError):
+        chain.render()
+
+    assert chain.invoke(complete=lambda prompt, **_: prompt).result == ""
