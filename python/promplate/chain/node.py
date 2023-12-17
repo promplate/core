@@ -215,9 +215,9 @@ class Interruptable(AbstractChain, Protocol):
             self._invoke(ChainContext(context, self.context), complete, callbacks, **config)
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                if jump.to is not None:
-                    jump.to.invoke(context, complete, **config)
+            if jump.out_of is None or jump.out_of is self:
+                if jump.into is not None:
+                    jump.into.invoke(context, complete, **config)
             else:
                 raise jump from None
         else:
@@ -233,9 +233,9 @@ class Interruptable(AbstractChain, Protocol):
             await self._ainvoke(ChainContext(context, self.context), complete, callbacks, **config)
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                if jump.to is not None:
-                    await jump.to.ainvoke(context, complete, **config)
+            if jump.out_of is None or jump.out_of is self:
+                if jump.into is not None:
+                    await jump.into.ainvoke(context, complete, **config)
             else:
                 raise jump from None
         else:
@@ -252,9 +252,9 @@ class Interruptable(AbstractChain, Protocol):
                 yield context
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                if jump.to is not None:
-                    yield from jump.to.stream(context, generate, **config)
+            if jump.out_of is None or jump.out_of is self:
+                if jump.into is not None:
+                    yield from jump.into.stream(context, generate, **config)
             else:
                 raise jump from None
         else:
@@ -269,9 +269,9 @@ class Interruptable(AbstractChain, Protocol):
                 yield context
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.bubble_up_to is None or jump.bubble_up_to is self:
-                if jump.to is not None:
-                    async for i in jump.to.astream(context, generate, **config):
+            if jump.out_of is None or jump.out_of is self:
+                if jump.into is not None:
+                    async for i in jump.into.astream(context, generate, **config):
                         yield i
             else:
                 raise jump from None
@@ -486,13 +486,9 @@ class Chain(Interruptable):
 
 
 class Jump(Exception):
-    def __init__(
-        self,
-        to: Interruptable | None = None,
-        bubble_up_to: Interruptable | None = None,
-    ):
-        self.to = to
-        self.bubble_up_to = bubble_up_to
+    def __init__(self, into: Interruptable | None = None, out_of: Interruptable | None = None):
+        self.into = into
+        self.out_of = out_of
 
     def __str__(self):
-        return f"{self.bubble_up_to} does not exist in the hierarchy"
+        return f"{self.out_of} does not exist in the chain hierarchy"

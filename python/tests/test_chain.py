@@ -37,7 +37,7 @@ def test_chain_break():
 
     @a.mid_process
     def _(_):
-        raise Jump(bubble_up_to=chain)
+        raise Jump(out_of=chain)
 
     assert chain.invoke(complete=as_is).result == "0"
 
@@ -49,7 +49,7 @@ def test_loop_break():
     @b.mid_process
     def _(context: ChainContext):
         if int(context.result) >= 6:
-            raise Jump(bubble_up_to=chain)
+            raise Jump(out_of=chain)
 
     chain = a + Loop(b)
 
