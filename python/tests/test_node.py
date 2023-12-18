@@ -1,6 +1,6 @@
 from operator import setitem
 
-from pytest import mark, raises
+from pytest import raises
 
 from promplate import BaseCallback, Callback, Node
 
@@ -44,7 +44,6 @@ def test_node_invoke():
     assert node.invoke({"a": 1}, complete).result == "1"
 
 
-@mark.asyncio
 async def test_node_ainvoke():
     node = Node("{{ b }}")
     complete = lambda prompt, **_: prompt
@@ -61,7 +60,6 @@ def test_node_stream():
         assert i == int(context.result[-1])
 
 
-@mark.asyncio
 async def test_node_astream():
     node = Node("{{ nums }}")
 

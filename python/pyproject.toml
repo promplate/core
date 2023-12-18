@@ -53,6 +53,8 @@ branch = true
 [tool.coverage.report]
 fail_under = 45
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [build-system]
 requires = ["poetry-core"]
