@@ -87,7 +87,7 @@ def test_callbacks_with_states():
 
     @chain.callback
     class _(BaseCallback):
-        def on_enter(self, context, config):
+        def on_enter(self, node, context, config):
             context = {} if context is None else context
             self.entered = True
             return context, config

@@ -137,12 +137,12 @@ class Interruptable(AbstractChain, Protocol):
     def enter(self, context: Context | None, config: Context):
         callbacks: list[BaseCallback] = ensure_callbacks(self.callbacks)
         for callback in callbacks:
-            context, config = callback.on_enter(context, config)
+            context, config = callback.on_enter(self, context, config)
         return context, config, callbacks
 
     def leave(self, context: ChainContext, config: Context, callbacks: list[BaseCallback]):
         for callback in reversed(callbacks):
-            context, config = callback.on_leave(context, config)
+            context, config = callback.on_leave(self, context, config)
         return context, config
 
     def add_pre_processes(self, *processes: Process | AsyncProcess):

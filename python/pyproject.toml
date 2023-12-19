@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.0rc2"
+version = "0.3.0rc3"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
 repository = "https://github.com/promplate/core"
@@ -44,7 +44,7 @@ cov = { composite = ["coverage run -m pytest", "coverage report"] }
 profile = "black"
 
 [tool.black]
-line-length = 110
+line-length = 130
 
 [tool.coverage.run]
 source = ["promplate"]

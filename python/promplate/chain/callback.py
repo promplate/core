@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Protocol
 from ..prompt import Context
 
 if TYPE_CHECKING:
-    from .node import AsyncProcess, ChainContext, Process
+    from .node import AsyncProcess, ChainContext, Interruptable, Process
 
 
 class BaseCallback(Protocol):
@@ -16,10 +16,10 @@ class BaseCallback(Protocol):
     def end_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
         pass
 
-    def on_enter(self, context: Context | None, config: Context) -> tuple[Context | None, Context]:
+    def on_enter(self, node: "Interruptable", context: Context | None, config: Context) -> tuple[Context | None, Context]:
         return context, config
 
-    def on_leave(self, context: "ChainContext", config: Context) -> tuple["ChainContext", Context]:
+    def on_leave(self, node: "Interruptable", context: "ChainContext", config: Context) -> tuple["ChainContext", Context]:
         return context, config
 
 
@@ -30,8 +30,8 @@ class Callback(BaseCallback):
         pre_process: "Process | AsyncProcess | None" = None,
         mid_process: "Process | AsyncProcess | None" = None,
         end_process: "Process | AsyncProcess | None" = None,
-        on_enter: Callable[[Context | None, Context], tuple[Context | None, Context]] | None = None,
-        on_leave: Callable[["ChainContext", Context], tuple["ChainContext", Context]] | None = None,
+        on_enter: Callable[["Interruptable", Context | None, Context], tuple[Context | None, Context]] | None = None,
+        on_leave: Callable[["Interruptable", "ChainContext", Context], tuple["ChainContext", Context]] | None = None,
     ) -> None:
         self._pre_process = pre_process
         self._mid_process = mid_process
@@ -51,12 +51,12 @@ class Callback(BaseCallback):
         if self._end_process is not None:
             return self._end_process(context)
 
-    def on_enter(self, context, config):
+    def on_enter(self, node, context, config):
         if self._on_enter is not None:
-            return self._on_enter(context, config)
+            return self._on_enter(node, context, config)
         return context, config
 
-    def on_leave(self, context, config):
+    def on_leave(self, node, context, config):
         if self._on_leave is not None:
-            return self._on_leave(context, config)
+            return self._on_leave(node, context, config)
         return context, config
