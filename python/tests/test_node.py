@@ -2,7 +2,7 @@ from operator import setitem
 
 from pytest import raises
 
-from promplate import BaseCallback, Callback, Node
+from promplate import BaseCallback, Callback, ChainContext, Node
 
 
 def test_add_callback_by_lambda():
@@ -99,3 +99,29 @@ def test_callbacks_with_states():
         chain.render()
 
     assert chain.invoke(complete=lambda prompt, **_: prompt).result == ""
+
+
+def test_order_of_callbacks():
+    node = Node("ABC")
+
+    def generate(prompt: str, /, **config):
+        yield from prompt
+
+    @node.callback
+    class Add1(BaseCallback):
+        def mid_process(self, context: ChainContext):
+            return {"letters": context.get("letters", []) + [f"{context.result}1"]}
+
+        def end_process(self, context: ChainContext):
+            return {"letters": context.get("letters", []) + ["end1"]}
+
+    @node.callback
+    class Add2(BaseCallback):
+        def mid_process(self, context: ChainContext):
+            return {"letters": context.get("letters", []) + [f"{context.result}2"]}
+
+        def end_process(self, context: ChainContext):
+            return {"letters": context.get("letters", []) + ["end2"]}
+
+    list(node.stream(context := {}, generate))
+    assert context["letters"] == ["A1", "A2", "AB1", "AB2", "ABC1", "ABC2", "end2", "end1"]

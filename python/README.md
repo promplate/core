@@ -32,4 +32,4 @@ I try to make the syntax compatible with `Jinja2`. So for now I recommend using 
 - [x] streaming support
 - [x] unit tests
   - coverage report [here](https://promplate-python-coverage.onrender.com/)
-- [ ] the order of callbacks matters
+- [x] the order of callbacks is reversed for `on_leave` and `end_process`

@@ -189,7 +189,7 @@ class Interruptable(AbstractChain, Protocol):
 
     @staticmethod
     def _apply_end_processes(context: ChainContext, callbacks: list[BaseCallback]):
-        for callback in callbacks:
+        for callback in reversed(callbacks):
             context |= cast(Context, callback.end_process(context) or {})
 
     @staticmethod
@@ -204,7 +204,7 @@ class Interruptable(AbstractChain, Protocol):
 
     @staticmethod
     async def _apply_async_end_processes(context: ChainContext, callbacks: list[BaseCallback]):
-        for callback in callbacks:
+        for callback in reversed(callbacks):
             context |= cast(Context, await resolve(callback.end_process(context)) or {})
 
     def invoke(self, context=None, /, complete=None, **config) -> ChainContext:
