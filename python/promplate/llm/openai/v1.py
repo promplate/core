@@ -123,20 +123,20 @@ class AsyncChatGenerate(AsyncClientConfig):
 
 
 class SyncTextOpenAI(ClientConfig, LLM):
-    complete: TextComplete = TextComplete.__call__  # type: ignore
-    generate: TextGenerate = TextGenerate.__call__  # type: ignore
+    complete = TextComplete.__call__
+    generate = TextGenerate.__call__
 
 
 class AsyncTextOpenAI(AsyncClientConfig, LLM):
-    complete: AsyncTextComplete = AsyncTextComplete.__call__  # type: ignore
-    generate: AsyncTextGenerate = AsyncTextGenerate.__call__  # type: ignore
+    complete = AsyncTextComplete.__call__
+    generate = AsyncTextGenerate.__call__
 
 
 class SyncChatOpenAI(ClientConfig, LLM):
-    complete: ChatComplete = ChatComplete.__call__  # type: ignore
-    generate: ChatGenerate = ChatGenerate.__call__  # type: ignore
+    complete = ChatComplete.__call__
+    generate = ChatGenerate.__call__
 
 
 class AsyncChatOpenAI(AsyncClientConfig, LLM):
-    complete: AsyncChatComplete = AsyncChatComplete.__call__  # type: ignore
-    generate: AsyncChatGenerate = AsyncChatGenerate.__call__  # type: ignore
+    complete = AsyncChatComplete.__call__
+    generate = AsyncChatGenerate.__call__

@@ -32,5 +32,8 @@ class AsyncGenerate(Protocol):
 
 
 class LLM(Protocol):
-    complete: Complete | AsyncComplete
-    generate: Generate | AsyncGenerate
+    def complete(self, prompt, /, **config) -> str | Awaitable[str]:
+        ...
+
+    def generate(self, prompt, /, **config) -> Iterable[str] | AsyncIterable[str]:
+        ...

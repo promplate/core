@@ -309,10 +309,6 @@ class Node(Loader, Interruptable):
         self.llm = llm
         self.run_config = config
 
-    def bind_llm(self, llm: LLM | None):
-        self.llm = llm
-        return llm
-
     def _invoke(self, context, /, complete, callbacks, **config):
         complete = self.llm.complete if self.llm else complete
         assert complete is not None
