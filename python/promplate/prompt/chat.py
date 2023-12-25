@@ -5,7 +5,7 @@ from .utils import is_message_start
 
 Role = Literal["user", "assistant", "system"]
 
-if version_info >= (3, 11):
+if version_info >= (3, 12):
     from typing import NotRequired, TypedDict
 
     class Message(TypedDict):  # type: ignore
