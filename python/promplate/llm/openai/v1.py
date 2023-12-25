@@ -50,11 +50,11 @@ class Config(Configurable):
         return MappingProxyType(config)
 
     @cached_property
-    def client(self):
+    def _client(self):
         return Client(**self._config)
 
     @cached_property
-    def aclient(self):
+    def _aclient(self):
         return AsyncClient(**self._config)
 
 
@@ -77,21 +77,21 @@ else:
 class TextComplete(ClientConfig):
     def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": False, "prompt": text}
-        result = self.client.completions.create(**config)
+        result = self._client.completions.create(**config)
         return result.choices[0].text
 
 
 class AsyncTextComplete(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": False, "prompt": text}
-        result = await self.aclient.completions.create(**config)
+        result = await self._aclient.completions.create(**config)
         return result.choices[0].text
 
 
 class TextGenerate(ClientConfig):
     def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": True, "prompt": text}
-        stream = self.client.completions.create(**config)
+        stream = self._client.completions.create(**config)
         for event in stream:
             yield event.choices[0].text
 
@@ -99,7 +99,7 @@ class TextGenerate(ClientConfig):
 class AsyncTextGenerate(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
         config = self._run_config | config | {"stream": True, "prompt": text}
-        stream = await self.aclient.completions.create(**config)
+        stream = await self._aclient.completions.create(**config)
         async for event in stream:
             yield event.choices[0].text
 
@@ -108,7 +108,7 @@ class ChatComplete(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": False, "messages": messages}
-        result = self.client.chat.completions.create(**config)
+        result = self._client.chat.completions.create(**config)
         return result.choices[0].message.content
 
 
@@ -116,7 +116,7 @@ class AsyncChatComplete(AsyncClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": False, "messages": messages}
-        result = await self.aclient.chat.completions.create(**config)
+        result = await self._aclient.chat.completions.create(**config)
         return result.choices[0].message.content
 
 
@@ -124,7 +124,7 @@ class ChatGenerate(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": True, "messages": messages}
-        stream = self.client.chat.completions.create(**config)
+        stream = self._client.chat.completions.create(**config)
         for event in stream:
             yield event.choices[0].delta.content or ""
 
@@ -133,7 +133,7 @@ class AsyncChatGenerate(AsyncClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": True, "messages": messages}
-        stream = await self.aclient.chat.completions.create(**config)
+        stream = await self._aclient.chat.completions.create(**config)
         async for event in stream:
             yield event.choices[0].delta.content or ""
 
