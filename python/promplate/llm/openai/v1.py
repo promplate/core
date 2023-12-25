@@ -1,5 +1,7 @@
 from copy import copy
 from functools import cached_property
+from importlib.metadata import version
+from sys import version as py_version
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 
@@ -29,9 +31,23 @@ class Config(Configurable):
         obj._run_config = self._run_config | run_config
         return obj
 
+    @cached_property
+    def _user_agent(self):
+        return " ".join(
+            (
+                f"Promplate/{version('promplate')} ({self.__class__.__name__})",
+                f"OpenAI/{version('openai')}",
+                f"HTTPX/{version('httpx')}",
+                f"Python/{py_version.split()[0]}",
+            )
+        )
+
     @property
     def _config(self):  # type: ignore
-        return MappingProxyType(super()._config)
+        ua_header = {"User-Agent": self._user_agent}
+        config = dict(super()._config)
+        config["default_headers"] = config.get("default_headers", {}) | ua_header
+        return MappingProxyType(config)
 
     @cached_property
     def client(self):
