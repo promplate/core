@@ -125,3 +125,9 @@ def test_order_of_callbacks():
 
     list(node.stream(context := {}, generate))
     assert context["letters"] == ["A1", "A2", "AB1", "AB2", "ABC1", "ABC2", "end2", "end1"]
+
+
+def test_config_overwrite():
+    node = Node("")
+    node.run_config["key"] = "1"
+    assert node.invoke(complete=lambda _, key: key, key="2").result == "2"  # type: ignore

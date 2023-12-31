@@ -315,7 +315,7 @@ class Node(Loader, Interruptable):
 
         prompt = self.render(context, callbacks)
 
-        context.result = complete(prompt, **self.run_config, **config)
+        context.result = complete(prompt, **(self.run_config | config))
 
         self._apply_mid_processes(context, callbacks)
 
@@ -328,7 +328,7 @@ class Node(Loader, Interruptable):
         prompt = self.render(context, callbacks)
 
         context.result = ""
-        for delta in generate(prompt, **self.run_config, **config):  # type: ignore
+        for delta in generate(prompt, **(self.run_config | config)):  # type: ignore
             context.result += delta
             self._apply_mid_processes(context, callbacks)
             yield
@@ -341,7 +341,7 @@ class Node(Loader, Interruptable):
 
         prompt = await self.arender(context, callbacks)
 
-        context.result = await resolve(complete(prompt, **self.run_config, **config))
+        context.result = await resolve(complete(prompt, **(self.run_config | config)))
 
         await self._apply_async_mid_processes(context, callbacks)
 
@@ -354,7 +354,7 @@ class Node(Loader, Interruptable):
         prompt = await self.arender(context, callbacks)
 
         context.result = ""
-        async for delta in iterate(generate(prompt, **self.run_config, **config)):
+        async for delta in iterate(generate(prompt, **(self.run_config | config))):
             context.result += delta
             await self._apply_async_mid_processes(context, callbacks)
             yield
