@@ -49,7 +49,7 @@ Process = Callable[[ChainContext], Context | None]
 AsyncProcess = Callable[[ChainContext], Awaitable[Context | None]]
 
 
-class AbstractChain(Protocol):
+class AbstractNode(Protocol):
     def invoke(
         self,
         context: Context | None = None,
@@ -86,12 +86,21 @@ class AbstractChain(Protocol):
     ) -> AsyncIterable[ChainContext]:
         ...
 
+    @classmethod
+    def _get_chain_type(cls):
+        return Chain
+
+    def __add__(self, chain: "AbstractNode"):
+        if isinstance(chain, Chain):
+            return self._get_chain_type()(self, *chain)
+        return self._get_chain_type()(self, chain)
+
 
 def ensure_callbacks(callbacks: list[BaseCallback | type[BaseCallback]]) -> list[BaseCallback]:
     return [i() if isclass(i) else i for i in callbacks]
 
 
-class Interruptable(AbstractChain, Protocol):
+class Interruptable(AbstractNode, Protocol):
     def _invoke(
         self,
         context: ChainContext,
@@ -361,16 +370,6 @@ class Node(Loader, Interruptable):
 
         await self._apply_async_end_processes(context, callbacks)
 
-    @staticmethod
-    def _get_chain_type():
-        return Chain
-
-    def __add__(self, chain: AbstractChain):
-        if isinstance(chain, Chain):
-            return self._get_chain_type()(self, *chain)
-        else:
-            return self._get_chain_type()(self, chain)
-
     def render(self, context: Context | None = None, callbacks: list[BaseCallback] | None = None):
         if callbacks is None:
             callbacks = ensure_callbacks(self.callbacks)
@@ -390,7 +389,7 @@ class Node(Loader, Interruptable):
 
 
 class Loop(Interruptable):
-    def __init__(self, chain: AbstractChain, partial_context: Context | None = None):
+    def __init__(self, chain: AbstractNode, partial_context: Context | None = None):
         self.chain = chain
         self._context = partial_context
         self.callbacks: list[BaseCallback | type[BaseCallback]] = []
@@ -427,20 +426,16 @@ class Loop(Interruptable):
 
 
 class Chain(Interruptable):
-    def __init__(self, *nodes: AbstractChain, partial_context: Context | None = None):
+    def __init__(self, *nodes: AbstractNode, partial_context: Context | None = None):
         self.nodes = list(nodes)
         self._context = partial_context
         self.callbacks: list[BaseCallback | type[BaseCallback]] = []
 
-    def __add__(self, chain: AbstractChain):
-        if isinstance(chain, Node):
-            return self.__class__(*self, chain)
-        elif isinstance(chain, Chain):
-            return self.__class__(*self, *chain)
-        else:
-            raise NotImplementedError
+    @classmethod
+    def _get_chain_type(cls):
+        return cls
 
-    def __iadd__(self, chain: AbstractChain):
+    def __iadd__(self, chain: AbstractNode):
         self.nodes.append(chain)
         return self
 
