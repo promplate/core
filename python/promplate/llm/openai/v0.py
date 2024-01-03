@@ -5,7 +5,7 @@ import openai
 from openai import ChatCompletion, Completion  # type: ignore
 
 from ...prompt.chat import Message, ensure
-from ..base import *
+from ..base import AsyncComplete, AsyncGenerate, Complete, Configurable, Generate
 
 meta = metadata("promplate")
 

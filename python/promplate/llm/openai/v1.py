@@ -8,7 +8,7 @@ from openai import AsyncClient, Client  # type: ignore
 
 from ...prompt.chat import Message, ensure
 from ...typing import TYPE_CHECKING, Any, Callable, List, ParamSpec, TypeVar, Union
-from ..base import *
+from ..base import LLM, Configurable
 
 P = ParamSpec("P")
 T = TypeVar("T")
