@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.1.2"
+version = "0.3.1.2.post1"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
 repository = "https://github.com/promplate/core"
@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.8"
 typing-extensions = { version = "^4", python = "<3.12" }
 aiofiles = { version = "^23.2", optional = true }
 httpx = { version = ">=0.24, <1.0", optional = true }
@@ -42,9 +42,10 @@ cov = { composite = ["coverage run -m pytest", "coverage report"] }
 
 [tool.isort]
 profile = "black"
+line_length = 150
 
 [tool.black]
-line-length = 130
+line-length = 150
 
 [tool.coverage.run]
 source = ["promplate"]

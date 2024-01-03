@@ -1,12 +1,13 @@
 from collections import ChainMap
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol
+from sys import version_info
 
-from .builder import *
-from .utils import *
+from ..typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Protocol, Self, Union
+from .builder import get_base_builder
+from .utils import AutoNaming, split_template_tokens
 
-Context = dict[str, Any]  # globals must be a real dict
+Context = Dict[str, Any]  # globals must be a real dict
 
 
 class Component(Protocol):
@@ -52,7 +53,7 @@ class TemplateCore(AutoNaming):
 
         if inner.startswith("end"):
             last = self._ops_stack.pop()
-            assert last == inner.removeprefix("end")
+            assert last == inner[3:]
             self._flush()
             self._builder.dedent()
 
@@ -81,8 +82,9 @@ class TemplateCore(AutoNaming):
     @staticmethod
     def _make_context(text: str):
         """generate context parameter if specified otherwise use locals() by default"""
-
-        return f"locals() | dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
+        if version_info >= (3, 10):
+            return f"(__l__:=locals().copy(), __l__.update(dict({text[text.index(' ') + 1:]})))[0]" if " " in text else "locals()"
+        return f"(__l__:=globals().copy(), __l__.update(dict({text[text.index(' ') + 1:]})))[0]" if " " in text else "globals()"
 
     def compile(self, sync=True):
         self._builder = get_base_builder(sync)
@@ -129,14 +131,14 @@ class TemplateCore(AutoNaming):
 
 class Loader(AutoNaming):
     @classmethod
-    def read(cls, path: str | Path, encoding="utf-8"):
+    def read(cls, path: Union[str, Path], encoding="utf-8"):
         path = Path(path)
         obj = cls(path.read_text(encoding))
         obj.name = path.stem
         return obj
 
     @classmethod
-    async def aread(cls, path: str | Path, encoding="utf-8"):
+    async def aread(cls, path: Union[str, Path], encoding="utf-8"):
         from aiofiles import open
 
         async with open(path, encoding=encoding) as f:
@@ -180,20 +182,15 @@ class SafeChainMapContext(ChainMap, dict):
     if TYPE_CHECKING:  # fix type from `collections.ChainMap`
         from sys import version_info
 
-        if version_info >= (3, 11):
-            from typing_extensions import Self
-        else:
-            from typing import Self
-
         copy: Callable[[Self], Self]
 
 
 class Template(TemplateCore, Loader):
-    def __init__(self, text: str, /, context: Context | None = None):
+    def __init__(self, text: str, /, context: Optional[Context] = None):
         super().__init__(text)
         self.context = {} if context is None else context
 
-    def render(self, context: Context | None = None):
+    def render(self, context: Optional[Context] = None):
         if context is None:
             context = SafeChainMapContext({}, self.context)
         else:
@@ -201,7 +198,7 @@ class Template(TemplateCore, Loader):
 
         return super().render(context)
 
-    async def arender(self, context: Context | None = None):
+    async def arender(self, context: Optional[Context] = None):
         if context is None:
             context = SafeChainMapContext({}, self.context)
         else:

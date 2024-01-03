@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Awaitable, Callable, Protocol
+from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Protocol, Tuple, Union
 
 from ..prompt import Context
 
@@ -7,19 +7,19 @@ if TYPE_CHECKING:
 
 
 class BaseCallback(Protocol):
-    def pre_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
+    def pre_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]:
         pass
 
-    def mid_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
+    def mid_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]:
         pass
 
-    def end_process(self, context: "ChainContext") -> Context | Awaitable[Context | None] | None:
+    def end_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]:
         pass
 
-    def on_enter(self, node: "Interruptable", context: Context | None, config: Context) -> tuple[Context | None, Context]:
+    def on_enter(self, node: "Interruptable", context: Optional[Context], config: Context) -> Tuple[Optional[Context], Context]:
         return context, config
 
-    def on_leave(self, node: "Interruptable", context: "ChainContext", config: Context) -> tuple["ChainContext", Context]:
+    def on_leave(self, node: "Interruptable", context: "ChainContext", config: Context) -> Tuple["ChainContext", Context]:
         return context, config
 
 
@@ -30,8 +30,8 @@ class Callback(BaseCallback):
         pre_process: "Process | AsyncProcess | None" = None,
         mid_process: "Process | AsyncProcess | None" = None,
         end_process: "Process | AsyncProcess | None" = None,
-        on_enter: Callable[["Interruptable", Context | None, Context], tuple[Context | None, Context]] | None = None,
-        on_leave: Callable[["Interruptable", "ChainContext", Context], tuple["ChainContext", Context]] | None = None,
+        on_enter: Optional[Callable[["Interruptable", Optional[Context], Context], Tuple[Optional[Context], Context]]] = None,
+        on_leave: Optional[Callable[["Interruptable", "ChainContext", Context], Tuple["ChainContext", Context]]] = None,
     ):
         self._pre_process = pre_process
         self._mid_process = mid_process

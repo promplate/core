@@ -1,7 +1,9 @@
 from functools import cached_property, wraps
 from inspect import currentframe
 from re import compile
-from typing import Any, Callable, ParamSpec, TypeVar
+from typing import Dict
+
+from ..typing import Any, Callable, ParamSpec, TypeVar
 
 split_template_tokens = compile(
     r"(\s{%-.*?-%}\s|\s{{-.*?-}}\s|\s{#-.*?-#}\s|\s{%-.*?%}|\s{{-.*?}}|\s{#-.*?#}|{%.*?-%}\s|{{.*?-}}\s|{#.*?-#}\s|{%.*?%}|{{.*?}}|{#.*?#})"
@@ -86,5 +88,5 @@ def cache_once(func: Callable[P, T]) -> Callable[P, T]:
 
 
 @cache_once
-def get_builtins() -> dict[str, Any]:
+def get_builtins() -> Dict[str, Any]:
     return __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__

@@ -1,6 +1,7 @@
 """Tests for the template syntax."""
 
 from collections import defaultdict
+from typing import Dict, Optional
 
 from pytest import raises
 
@@ -8,7 +9,7 @@ from promplate import Node, Template
 from promplate.prompt.utils import get_builtins
 
 
-def render_assert(text: str, context: dict | None = None, expected: str | None = None):
+def render_assert(text: str, context: Optional[Dict] = None, expected: Optional[str] = None):
     """
     Render inputted text, then compare with the expected result.
 
@@ -222,13 +223,7 @@ def test_whitespace_handling():
         "@\n a0b0c0\n\n a1b1c1\n\n a2b2c2\n!\n",
     )
     render_assert(
-        "@{% for n in nums -%}"
-        "{% for a in abc -%}"
-        "{## this disappears completely -##}"
-        "{{a -}}"
-        "{{n -}}"
-        "{% endfor %}\n"
-        "{% endfor %}!\n",
+        "@{% for n in nums -%}" "{% for a in abc -%}" "{## this disappears completely -##}" "{{a -}}" "{{n -}}" "{% endfor %}\n" "{% endfor %}!\n",
         {"nums": [0, 1, 2], "abc": ["a", "b", "c"]},
         "@a0b0c0\na1b1c1\na2b2c2\n!\n",
     )

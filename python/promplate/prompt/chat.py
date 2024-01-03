@@ -1,5 +1,5 @@
 from sys import version_info
-from typing import Literal
+from typing import List, Literal, Optional, Union
 
 from .utils import is_message_start
 
@@ -26,7 +26,7 @@ class MessageBuilder:
     _initializing = True
     __slots__ = ("role", "content", "name")
 
-    def __init__(self, role: Role, /, content: str = "", name: str | None = None):
+    def __init__(self, role: Role, /, content: str = "", name: Optional[str] = None):
         self.role: Role = role
         self.content = content
         self.name = name
@@ -70,11 +70,11 @@ S = system = MessageBuilder("system")
 MessageBuilder._initializing = False
 
 
-def ensure(text_or_list: list[Message] | str) -> list[Message]:
+def ensure(text_or_list: Union[List[Message], str]) -> List[Message]:
     return parse_chat_markup(text_or_list) if isinstance(text_or_list, str) else text_or_list
 
 
-def parse_chat_markup(text: str) -> list[Message]:
+def parse_chat_markup(text: str) -> List[Message]:
     messages = []
     current_message = None
     buffer = []
@@ -104,5 +104,5 @@ def parse_chat_markup(text: str) -> list[Message]:
     if messages:
         return messages
     elif text and text != "\n":
-        return [{"role": "user", "content": text.removesuffix("\n")}]
+        return [{"role": "user", "content": text[:-1] if text[-1] == "\n" else text}]
     return []

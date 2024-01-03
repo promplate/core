@@ -3,11 +3,11 @@ from functools import cached_property
 from importlib.metadata import version
 from sys import version as py_version
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 
 from openai import AsyncClient, Client  # type: ignore
 
 from ...prompt.chat import Message, ensure
+from ...typing import TYPE_CHECKING, Any, Callable, List, ParamSpec, TypeVar, Union
 from ..base import *
 
 P = ParamSpec("P")
@@ -105,7 +105,7 @@ class AsyncTextGenerate(AsyncClientConfig):
 
 
 class ChatComplete(ClientConfig):
-    def __call__(self, messages: list[Message] | str, /, **config):
+    def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": False, "messages": messages}
         result = self._client.chat.completions.create(**config)
@@ -113,7 +113,7 @@ class ChatComplete(ClientConfig):
 
 
 class AsyncChatComplete(AsyncClientConfig):
-    async def __call__(self, messages: list[Message] | str, /, **config):
+    async def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": False, "messages": messages}
         result = await self._aclient.chat.completions.create(**config)
@@ -121,7 +121,7 @@ class AsyncChatComplete(AsyncClientConfig):
 
 
 class ChatGenerate(ClientConfig):
-    def __call__(self, messages: list[Message] | str, /, **config):
+    def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": True, "messages": messages}
         stream = self._client.chat.completions.create(**config)
@@ -130,7 +130,7 @@ class ChatGenerate(ClientConfig):
 
 
 class AsyncChatGenerate(AsyncClientConfig):
-    async def __call__(self, messages: list[Message] | str, /, **config):
+    async def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
         config = self._run_config | config | {"stream": True, "messages": messages}
         stream = await self._aclient.chat.completions.create(**config)

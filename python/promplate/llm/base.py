@@ -1,5 +1,5 @@
 from functools import partial
-from typing import AsyncIterable, Awaitable, Iterable, Protocol, cast
+from typing import AsyncIterable, Awaitable, Iterable, Protocol, Union, cast
 
 
 class Configurable:
@@ -33,10 +33,10 @@ class AsyncGenerate(Protocol):
 
 
 class LLM(Protocol):
-    @partial(cast, Complete | AsyncComplete)
-    def complete(self, prompt, /, **config) -> str | Awaitable[str]:
+    @partial(cast, Union[Complete, AsyncComplete])
+    def complete(self, prompt, /, **config) -> Union[str, Awaitable[str]]:
         ...
 
-    @partial(cast, Generate | AsyncGenerate)
-    def generate(self, prompt, /, **config) -> Iterable[str] | AsyncIterable[str]:
+    @partial(cast, Union[Generate, AsyncGenerate])
+    def generate(self, prompt, /, **config) -> Union[Iterable[str], AsyncIterable[str]]:
         ...
