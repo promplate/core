@@ -32,7 +32,7 @@ class Callback(BaseCallback):
         end_process: "Process | AsyncProcess | None" = None,
         on_enter: Callable[["Interruptable", Context | None, Context], tuple[Context | None, Context]] | None = None,
         on_leave: Callable[["Interruptable", "ChainContext", Context], tuple["ChainContext", Context]] | None = None,
-    ) -> None:
+    ):
         self._pre_process = pre_process
         self._mid_process = mid_process
         self._end_process = end_process

@@ -42,7 +42,7 @@ class MessageBuilder:
     def __setitem__(self, key, value):
         return setattr(self, key, value)
 
-    def __setattr__(self, key, value) -> None:
+    def __setattr__(self, key, value):
         if not self._initializing:
             assert self is not U and self is not A and self is not S
             assert isinstance(value, str)

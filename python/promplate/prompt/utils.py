@@ -28,7 +28,7 @@ class AutoNaming:
         obj._bind_frame()
         return obj
 
-    def _bind_frame(self) -> None:
+    def _bind_frame(self):
         self._frame = currentframe()
 
     @cached_property
