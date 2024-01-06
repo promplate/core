@@ -1,4 +1,6 @@
 from inspect import isclass
+from itertools import accumulate
+from typing import Callable, Mapping, MutableMapping, overload
 
 from promplate.chain.callback import BaseCallback
 from promplate.llm.base import Complete
@@ -7,7 +9,7 @@ from ..llm.base import LLM, AsyncComplete, AsyncGenerate, Generate
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
 from ..typing import AsyncIterable, Awaitable, Callable, Iterable, List, Mapping, MutableMapping, Optional, Protocol, Type, Union, cast, overload
 from .callback import BaseCallback, Callback
-from .utils import iterate, resolve
+from .utils import accumulate_any, resolve
 
 
 class ChainContext(SafeChainMapContext):
@@ -48,7 +50,7 @@ Process = Callable[[ChainContext], Optional[Context]]
 AsyncProcess = Callable[[ChainContext], Awaitable[Optional[Context]]]
 
 
-class AbstractChain(Protocol):
+class AbstractNode(Protocol):
     def invoke(
         self,
         context: Optional[Context] = None,
@@ -85,12 +87,21 @@ class AbstractChain(Protocol):
     ) -> AsyncIterable[ChainContext]:
         ...
 
+    @classmethod
+    def _get_chain_type(cls):
+        return Chain
+
+    def __add__(self, chain: "AbstractNode"):
+        if isinstance(chain, Chain):
+            return self._get_chain_type()(self, *chain)
+        return self._get_chain_type()(self, chain)
+
 
 def ensure_callbacks(callbacks: List[Union[BaseCallback, Type[BaseCallback]]]) -> List[BaseCallback]:
     return [i() if isclass(i) else i for i in callbacks]
 
 
-class Interruptable(AbstractChain, Protocol):
+class Interruptable(AbstractNode, Protocol):
     def _invoke(
         self,
         context: ChainContext,
@@ -214,11 +225,10 @@ class Interruptable(AbstractChain, Protocol):
             self._invoke(ChainContext(context, self.context), complete, callbacks, **config)
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    jump.into.invoke(context, complete, **config)
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                jump.into.invoke(context, complete, **config)
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -232,11 +242,10 @@ class Interruptable(AbstractChain, Protocol):
             await self._ainvoke(ChainContext(context, self.context), complete, callbacks, **config)
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    await jump.into.ainvoke(context, complete, **config)
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                await jump.into.ainvoke(context, complete, **config)
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -251,11 +260,10 @@ class Interruptable(AbstractChain, Protocol):
                 yield context
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    yield from jump.into.stream(context, generate, **config)
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                yield from jump.into.stream(context, generate, **config)
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -268,12 +276,11 @@ class Interruptable(AbstractChain, Protocol):
                 yield context
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    async for i in jump.into.astream(context, generate, **config):
-                        yield i
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                async for i in jump.into.astream(context, generate, **config):
+                    yield i
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -326,9 +333,8 @@ class Node(Loader, Interruptable):
 
         prompt = self.render(context, callbacks)
 
-        context.result = ""
-        for delta in generate(prompt, **({**self.run_config, **config})):  # type: ignore
-            context.result += delta
+        for result in accumulate(cast(Generate, generate)(prompt, **({**self.run_config, **config}))):
+            context.result = result
             self._apply_mid_processes(context, callbacks)
             yield
 
@@ -352,23 +358,12 @@ class Node(Loader, Interruptable):
 
         prompt = await self.arender(context, callbacks)
 
-        context.result = ""
-        async for delta in iterate(generate(prompt, **({**self.run_config, **config}))):
-            context.result += delta
+        async for result in accumulate_any(generate(prompt, **({**self.run_config, **config}))):
+            context.result = result
             await self._apply_async_mid_processes(context, callbacks)
             yield
 
         await self._apply_async_end_processes(context, callbacks)
-
-    @staticmethod
-    def _get_chain_type():
-        return Chain
-
-    def __add__(self, chain: AbstractChain):
-        if isinstance(chain, Chain):
-            return self._get_chain_type()(self, *chain)
-        else:
-            return self._get_chain_type()(self, chain)
 
     def render(self, context: Optional[Context] = None, callbacks: Optional[List[BaseCallback]] = None):
         if callbacks is None:
@@ -389,7 +384,7 @@ class Node(Loader, Interruptable):
 
 
 class Loop(Interruptable):
-    def __init__(self, chain: AbstractChain, partial_context: Optional[Context] = None):
+    def __init__(self, chain: AbstractNode, partial_context: Optional[Context] = None):
         self.chain = chain
         self._context = partial_context
         self.callbacks: List[Union[BaseCallback, Type[BaseCallback]]] = []
@@ -426,20 +421,16 @@ class Loop(Interruptable):
 
 
 class Chain(Interruptable):
-    def __init__(self, *nodes: AbstractChain, partial_context: Optional[Context] = None):
+    def __init__(self, *nodes: AbstractNode, partial_context: Optional[Context] = None):
         self.nodes = list(nodes)
         self._context = partial_context
         self.callbacks: List[Union[BaseCallback, Type[BaseCallback]]] = []
 
-    def __add__(self, chain: AbstractChain):
-        if isinstance(chain, Node):
-            return self.__class__(*self, chain)
-        elif isinstance(chain, Chain):
-            return self.__class__(*self, *chain)
-        else:
-            raise NotImplementedError
+    @classmethod
+    def _get_chain_type(cls):
+        return cls
 
-    def __iadd__(self, chain: AbstractChain):
+    def __iadd__(self, chain: AbstractNode):
         self.nodes.append(chain)
         return self
 
