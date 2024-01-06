@@ -1,4 +1,4 @@
-from promplate.chain.utils import iterate, resolve
+from promplate.chain.utils import accumulate_any, resolve
 
 
 async def test_resolve():
@@ -14,9 +14,13 @@ async def test_resolve():
     assert await resolve(h()) == 1
 
 
-async def test_iterate():
-    async for i in iterate(range(1, 2)):
-        assert i == 1
+async def test_accumulate():
+    it = accumulate_any("abc")
+    assert await anext(it) == "a"
+    assert await anext(it) == "ab"
+    assert await anext(it) == "abc"
 
-    async for i in iterate(iterate(range(1, 2))):
-        assert i == 1
+
+async def test_accumulate_empty():
+    async for _ in accumulate_any(""):
+        assert False

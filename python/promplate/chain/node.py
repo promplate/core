@@ -1,14 +1,14 @@
 from inspect import isclass
-from typing import Callable, Mapping, MutableMapping, cast, overload
+from itertools import accumulate
+from typing import Callable, Mapping, MutableMapping, overload
 
 from promplate.chain.callback import BaseCallback
 from promplate.llm.base import Complete
 
 from ..llm.base import *
-from ..llm.base import AsyncGenerate, AsyncIterable, Generate, Iterable
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
 from .callback import BaseCallback, Callback
-from .utils import iterate, resolve
+from .utils import accumulate_any, resolve
 
 
 class ChainContext(SafeChainMapContext):
@@ -224,11 +224,10 @@ class Interruptable(AbstractNode, Protocol):
             self._invoke(ChainContext(context, self.context), complete, callbacks, **config)
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    jump.into.invoke(context, complete, **config)
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                jump.into.invoke(context, complete, **config)
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -242,11 +241,10 @@ class Interruptable(AbstractNode, Protocol):
             await self._ainvoke(ChainContext(context, self.context), complete, callbacks, **config)
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    await jump.into.ainvoke(context, complete, **config)
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                await jump.into.ainvoke(context, complete, **config)
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -261,11 +259,10 @@ class Interruptable(AbstractNode, Protocol):
                 yield context
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    yield from jump.into.stream(context, generate, **config)
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                yield from jump.into.stream(context, generate, **config)
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -278,12 +275,11 @@ class Interruptable(AbstractNode, Protocol):
                 yield context
         except Jump as jump:
             context, config = self.leave(context, config, callbacks)
-            if jump.out_of is None or jump.out_of is self:
-                if jump.into is not None:
-                    async for i in jump.into.astream(context, generate, **config):
-                        yield i
-            else:
+            if jump.out_of is not None and jump.out_of is not self:
                 raise jump from None
+            if jump.into is not None:
+                async for i in jump.into.astream(context, generate, **config):
+                    yield i
         else:
             context, config = self.leave(context, config, callbacks)
 
@@ -336,9 +332,8 @@ class Node(Loader, Interruptable):
 
         prompt = self.render(context, callbacks)
 
-        context.result = ""
-        for delta in generate(prompt, **(self.run_config | config)):  # type: ignore
-            context.result += delta
+        for result in accumulate(cast(Generate, generate)(prompt, **(self.run_config | config))):
+            context.result = result
             self._apply_mid_processes(context, callbacks)
             yield
 
@@ -362,9 +357,8 @@ class Node(Loader, Interruptable):
 
         prompt = await self.arender(context, callbacks)
 
-        context.result = ""
-        async for delta in iterate(generate(prompt, **(self.run_config | config))):
-            context.result += delta
+        async for result in accumulate_any(generate(prompt, **(self.run_config | config))):
+            context.result = result
             await self._apply_async_mid_processes(context, callbacks)
             yield
 

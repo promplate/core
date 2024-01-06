@@ -1,5 +1,6 @@
 from inspect import Parameter, isasyncgen, isawaitable, signature
-from typing import AsyncIterable, Awaitable, Callable, Iterable, TypeVar
+from itertools import accumulate
+from typing import AsyncIterable, Awaitable, Callable, Iterable, TypeVar, cast
 
 T = TypeVar("T")
 
@@ -28,10 +29,19 @@ async def resolve(maybe_awaitable: T | Awaitable[T], /) -> T:
     return maybe_awaitable  # type: ignore
 
 
-async def iterate(maybe_asyncgen: Iterable | AsyncIterable):
-    if isasyncgen(maybe_asyncgen):
-        async for i in maybe_asyncgen:
+async def async_accumulate(async_iterable: AsyncIterable[str]):
+    result = ""
+    async for delta in async_iterable:
+        result += delta
+        yield result
+
+
+def accumulate_any(any_iterable: Iterable[str] | AsyncIterable[str]):
+    if isasyncgen(any_iterable):
+        return async_accumulate(any_iterable)
+
+    async def _():
+        for i in accumulate(cast(Iterable[str], any_iterable)):
             yield i
-    else:
-        for i in maybe_asyncgen:  # type: ignore
-            yield i
+
+    return _()
