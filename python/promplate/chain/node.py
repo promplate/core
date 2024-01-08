@@ -315,7 +315,7 @@ class Node(Loader, Interruptable):
         self.run_config = config
 
     def _invoke(self, context, /, complete, callbacks, **config):
-        complete = self.llm.complete if self.llm else complete
+        complete = cast(Complete, self.llm.complete if self.llm else complete)
         assert complete is not None
 
         prompt = self.render(context, callbacks)
@@ -327,12 +327,12 @@ class Node(Loader, Interruptable):
         self._apply_end_processes(context, callbacks)
 
     def _stream(self, context, /, generate, callbacks, **config):
-        generate = self.llm.generate if self.llm else generate
+        generate = cast(Generate, self.llm.generate if self.llm else generate)
         assert generate is not None
 
         prompt = self.render(context, callbacks)
 
-        for result in accumulate(cast(Generate, generate)(prompt, **(self.run_config | config))):
+        for result in accumulate(generate(prompt, **(self.run_config | config))):
             context.result = result
             self._apply_mid_processes(context, callbacks)
             yield
@@ -340,7 +340,7 @@ class Node(Loader, Interruptable):
         self._apply_end_processes(context, callbacks)
 
     async def _ainvoke(self, context, /, complete, callbacks, **config):
-        complete = self.llm.complete if self.llm else complete
+        complete = cast(Complete | AsyncComplete, self.llm.complete if self.llm else complete)
         assert complete is not None
 
         prompt = await self.arender(context, callbacks)
@@ -352,7 +352,7 @@ class Node(Loader, Interruptable):
         await self._apply_async_end_processes(context, callbacks)
 
     async def _astream(self, context, /, generate, callbacks, **config):
-        generate = self.llm.generate if self.llm else generate
+        generate = cast(Generate | AsyncGenerate, self.llm.generate if self.llm else generate)
         assert generate is not None
 
         prompt = await self.arender(context, callbacks)
