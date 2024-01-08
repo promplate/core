@@ -28,7 +28,7 @@ class Config(Configurable):
 
     def bind(self, **run_config):
         obj = copy(self)
-        obj._run_config = self._run_config | run_config
+        obj._run_config = {**self._run_config, **run_config}
         return obj
 
     @cached_property
@@ -46,7 +46,7 @@ class Config(Configurable):
     def _config(self):  # type: ignore
         ua_header = {"User-Agent": self._user_agent}
         config = dict(super()._config)
-        config["default_headers"] = config.get("default_headers", {}) | ua_header
+        config["default_headers"] = {**config.get("default_headers", {}), **ua_header}
         return MappingProxyType(config)
 
     @cached_property
@@ -76,21 +76,21 @@ else:
 
 class TextComplete(ClientConfig):
     def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": False, "prompt": text}
+        config = {**self._run_config, **config, **{"stream": False, "prompt": text}}
         result = self._client.completions.create(**config)
         return result.choices[0].text
 
 
 class AsyncTextComplete(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": False, "prompt": text}
+        config = {**self._run_config, **config, **{"stream": False, "prompt": text}}
         result = await self._aclient.completions.create(**config)
         return result.choices[0].text
 
 
 class TextGenerate(ClientConfig):
     def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": True, "prompt": text}
+        config = {**self._run_config, **config, **{"stream": True, "prompt": text}}
         stream = self._client.completions.create(**config)
         for event in stream:
             yield event.choices[0].text
@@ -98,7 +98,7 @@ class TextGenerate(ClientConfig):
 
 class AsyncTextGenerate(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": True, "prompt": text}
+        config = {**self._run_config, **config, **{"stream": True, "prompt": text}}
         stream = await self._aclient.completions.create(**config)
         async for event in stream:
             yield event.choices[0].text
@@ -107,7 +107,7 @@ class AsyncTextGenerate(AsyncClientConfig):
 class ChatComplete(ClientConfig):
     def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": False, "messages": messages}
+        config = {**self._run_config, **config, **{"stream": False, "messages": messages}}
         result = self._client.chat.completions.create(**config)
         return result.choices[0].message.content
 
@@ -115,7 +115,7 @@ class ChatComplete(ClientConfig):
 class AsyncChatComplete(AsyncClientConfig):
     async def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": False, "messages": messages}
+        config = {**self._run_config, **config, **{"stream": False, "messages": messages}}
         result = await self._aclient.chat.completions.create(**config)
         return result.choices[0].message.content
 
@@ -123,7 +123,7 @@ class AsyncChatComplete(AsyncClientConfig):
 class ChatGenerate(ClientConfig):
     def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": True, "messages": messages}
+        config = {**self._run_config, **config, **{"stream": True, "messages": messages}}
         stream = self._client.chat.completions.create(**config)
         for event in stream:
             yield event.choices[0].delta.content or ""
@@ -132,7 +132,7 @@ class ChatGenerate(ClientConfig):
 class AsyncChatGenerate(AsyncClientConfig):
     async def __call__(self, messages: Union[List[Message], str], /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": True, "messages": messages}
+        config = {**self._run_config, **config, **{"stream": True, "messages": messages}}
         stream = await self._aclient.chat.completions.create(**config)
         async for event in stream:
             yield event.choices[0].delta.content or ""
