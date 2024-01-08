@@ -68,8 +68,7 @@ def parse_chat_markup(text: str) -> List[Message]:
     buffer = []
 
     for line in text.splitlines():
-        match = is_message_start.match(line)
-        if match:
+        if match := is_message_start.match(line):
             role, name = match.group(1), match.group(2)
 
             if current_message:
