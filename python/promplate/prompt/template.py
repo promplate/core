@@ -10,11 +10,9 @@ Context = dict[str, Any]  # globals must be a real dict
 
 
 class Component(Protocol):
-    def render(self, context: Context) -> str:
-        ...
+    def render(self, context: Context) -> str: ...
 
-    async def arender(self, context: Context) -> str:
-        ...
+    async def arender(self, context: Context) -> str: ...
 
 
 class TemplateCore(AutoNaming):

@@ -62,13 +62,11 @@ if TYPE_CHECKING:
 
     class ClientConfig(Config):
         @same_params_as(Client)
-        def __init__(self, **config):
-            ...
+        def __init__(self, **config): ...
 
     class AsyncClientConfig(Config):
         @same_params_as(AsyncClient)
-        def __init__(self, **config):
-            ...
+        def __init__(self, **config): ...
 
 else:
     ClientConfig = AsyncClientConfig = Config

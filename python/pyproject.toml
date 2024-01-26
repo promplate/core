@@ -30,7 +30,7 @@ all = ["aiofiles", "httpx", "openai"]
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5"
-black = "^23"
+black = "^24"
 pytest = "^7"
 coverage = "^7"
 pytest-asyncio = "^0.23"

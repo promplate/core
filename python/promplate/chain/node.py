@@ -13,16 +13,13 @@ from .utils import accumulate_any, resolve
 
 class ChainContext(SafeChainMapContext):
     @overload
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     @overload
-    def __init__(self, least: MutableMapping | None = None):
-        ...
+    def __init__(self, least: MutableMapping | None = None): ...
 
     @overload
-    def __init__(self, least: MutableMapping | None = None, *maps: Mapping):
-        ...
+    def __init__(self, least: MutableMapping | None = None, *maps: Mapping): ...
 
     def __init__(self, least: MutableMapping | None = None, *maps: Mapping):
         super().__init__({} if least is None else least, *maps)  # type: ignore
@@ -56,8 +53,7 @@ class AbstractNode(Protocol):
         /,
         complete: Complete | None = None,
         **config,
-    ) -> ChainContext:
-        ...
+    ) -> ChainContext: ...
 
     async def ainvoke(
         self,
@@ -65,8 +61,7 @@ class AbstractNode(Protocol):
         /,
         complete: Complete | AsyncComplete | None = None,
         **config,
-    ) -> ChainContext:
-        ...
+    ) -> ChainContext: ...
 
     def stream(
         self,
@@ -74,8 +69,7 @@ class AbstractNode(Protocol):
         /,
         generate: Generate | None = None,
         **config,
-    ) -> Iterable[ChainContext]:
-        ...
+    ) -> Iterable[ChainContext]: ...
 
     def astream(
         self,
@@ -83,8 +77,7 @@ class AbstractNode(Protocol):
         /,
         generate: Generate | AsyncGenerate | None = None,
         **config,
-    ) -> AsyncIterable[ChainContext]:
-        ...
+    ) -> AsyncIterable[ChainContext]: ...
 
     @classmethod
     def _get_chain_type(cls):
@@ -108,8 +101,7 @@ class Interruptable(AbstractNode, Protocol):
         complete: Complete | None,
         callbacks: list[BaseCallback],
         **config,
-    ):
-        ...
+    ): ...
 
     async def _ainvoke(
         self,
@@ -118,8 +110,7 @@ class Interruptable(AbstractNode, Protocol):
         complete: Complete | AsyncComplete | None,
         callbacks: list[BaseCallback],
         **config,
-    ):
-        ...
+    ): ...
 
     def _stream(
         self,
@@ -128,8 +119,7 @@ class Interruptable(AbstractNode, Protocol):
         generate: Generate | None,
         callbacks: list[BaseCallback],
         **config,
-    ) -> Iterable:
-        ...
+    ) -> Iterable: ...
 
     def _astream(
         self,
@@ -138,8 +128,7 @@ class Interruptable(AbstractNode, Protocol):
         generate: Generate | AsyncGenerate | None,
         callbacks: list[BaseCallback],
         **config,
-    ) -> AsyncIterable:
-        ...
+    ) -> AsyncIterable: ...
 
     callbacks: list[BaseCallback | type[BaseCallback]]
 
