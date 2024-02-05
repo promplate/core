@@ -106,14 +106,24 @@ def get_user_agent(self, *additional_packages: tuple[str, str]):
 
 
 @cache_once
-def _get_client(kwargs):
-    from httpx import Client
+def _is_http2_available():
+    try:
+        import h2  # type: ignore
 
-    return Client(**kwargs)
+        return True
+    except ImportError:
+        return False
 
 
 @cache_once
-def _get_aclient(kwargs):
+def _get_client():
+    from httpx import Client
+
+    return Client(follow_redirects=True, http2=_is_http2_available())
+
+
+@cache_once
+def _get_aclient():
     from httpx import AsyncClient
 
-    return AsyncClient(**kwargs)
+    return AsyncClient(follow_redirects=True, http2=_is_http2_available())

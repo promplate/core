@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 from openai import AsyncClient, Client  # type: ignore
 
 from ...prompt.chat import Message, ensure
-from ...prompt.utils import get_user_agent
+from ...prompt.utils import _get_aclient, _get_client, get_user_agent
 from ..base import *
 
 P = ParamSpec("P")
@@ -43,11 +43,17 @@ class Config(Configurable):
 
     @cached_property
     def _client(self):
-        return Client(**self._config)
+        if "http_client" in self._config:
+            return Client(**self._config)
+        else:
+            return Client(**self._config, http_client=_get_client())
 
     @cached_property
     def _aclient(self):
-        return AsyncClient(**self._config)
+        if "http_client" in self._config:
+            return AsyncClient(**self._config)
+        else:
+            return AsyncClient(**self._config, http_client=_get_aclient())
 
 
 if TYPE_CHECKING:

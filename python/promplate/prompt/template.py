@@ -157,7 +157,7 @@ class Loader(AutoNaming):
     def fetch(cls, url: str, **kwargs):
         from .utils import _get_client
 
-        response = _get_client(cls._patch_kwargs(kwargs)).get(url)
+        response = _get_client().get(url, **cls._patch_kwargs(kwargs))
         obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
@@ -166,7 +166,7 @@ class Loader(AutoNaming):
     async def afetch(cls, url: str, **kwargs):
         from .utils import _get_aclient
 
-        response = await _get_aclient(cls._patch_kwargs(kwargs)).get(url)
+        response = await _get_aclient().get(url, **cls._patch_kwargs(kwargs))
         obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
