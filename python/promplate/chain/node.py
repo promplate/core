@@ -2,9 +2,6 @@ from inspect import isclass
 from itertools import accumulate
 from typing import Callable, Mapping, MutableMapping, overload
 
-from promplate.chain.callback import BaseCallback
-from promplate.llm.base import Complete
-
 from ..llm.base import *
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
 from .callback import BaseCallback, Callback
