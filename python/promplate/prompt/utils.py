@@ -1,7 +1,7 @@
 from functools import cached_property, wraps
-from inspect import currentframe
+from inspect import currentframe, isclass
 from re import compile
-from typing import Dict
+from typing import Dict, Tuple
 
 from ..typing import Any, Callable, ParamSpec, TypeVar
 
@@ -90,3 +90,42 @@ def cache_once(func: Callable[P, T]) -> Callable[P, T]:
 @cache_once
 def get_builtins() -> Dict[str, Any]:
     return __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
+
+
+@cache_once
+def get_user_agent(self, *additional_packages: Tuple[str, str]):
+    from importlib.metadata import version
+    from sys import version as py_version
+
+    return " ".join(
+        (
+            f"Promplate/{version('promplate')} ({self.__name__ if isclass(self) else self.__class__.__name__})",
+            *(f"{display_name}/{version(package)}" for display_name, package in additional_packages),
+            f"HTTPX/{version('httpx')}",
+            f"Python/{py_version.split()[0]}",
+        )
+    )
+
+
+@cache_once
+def _is_http2_available():
+    try:
+        import h2  # type: ignore
+
+        return True
+    except ImportError:
+        return False
+
+
+@cache_once
+def _get_client():
+    from httpx import Client
+
+    return Client(follow_redirects=True, http2=_is_http2_available())
+
+
+@cache_once
+def _get_aclient():
+    from httpx import AsyncClient
+
+    return AsyncClient(follow_redirects=True, http2=_is_http2_available())

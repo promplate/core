@@ -47,11 +47,9 @@ if TYPE_CHECKING:
             for key, val in other_config.items():
                 setattr(self, key, val)
 
-        def __setattr__(self, *_):
-            ...
+        def __setattr__(self, *_): ...
 
-        def __getattr__(self, _):
-            ...
+        def __getattr__(self, _): ...
 
 else:
     Config = Configurable

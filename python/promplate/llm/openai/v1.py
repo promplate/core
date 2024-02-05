@@ -1,12 +1,11 @@
 from copy import copy
 from functools import cached_property
-from importlib.metadata import version
-from sys import version as py_version
 from types import MappingProxyType
 
 from openai import AsyncClient, Client  # type: ignore
 
 from ...prompt.chat import Message, ensure
+from ...prompt.utils import _get_aclient, _get_client, get_user_agent
 from ...typing import TYPE_CHECKING, Any, Callable, List, ParamSpec, TypeVar, Union
 from ..base import LLM, Configurable
 
@@ -33,14 +32,7 @@ class Config(Configurable):
 
     @cached_property
     def _user_agent(self):
-        return " ".join(
-            (
-                f"Promplate/{version('promplate')} ({self.__class__.__name__})",
-                f"OpenAI/{version('openai')}",
-                f"HTTPX/{version('httpx')}",
-                f"Python/{py_version.split()[0]}",
-            )
-        )
+        return get_user_agent(self, ("OpenAI", "openai"))
 
     @property
     def _config(self):  # type: ignore
@@ -51,24 +43,28 @@ class Config(Configurable):
 
     @cached_property
     def _client(self):
-        return Client(**self._config)
+        if "http_client" in self._config:
+            return Client(**self._config)
+        else:
+            return Client(**self._config, http_client=_get_client())
 
     @cached_property
     def _aclient(self):
-        return AsyncClient(**self._config)
+        if "http_client" in self._config:
+            return AsyncClient(**self._config)
+        else:
+            return AsyncClient(**self._config, http_client=_get_aclient())
 
 
 if TYPE_CHECKING:
 
     class ClientConfig(Config):
         @same_params_as(Client)
-        def __init__(self, **config):
-            ...
+        def __init__(self, **config): ...
 
     class AsyncClientConfig(Config):
         @same_params_as(AsyncClient)
-        def __init__(self, **config):
-            ...
+        def __init__(self, **config): ...
 
 else:
     ClientConfig = AsyncClientConfig = Config

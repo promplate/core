@@ -2,10 +2,7 @@ from inspect import isclass
 from itertools import accumulate
 from typing import Callable, Mapping, MutableMapping, overload
 
-from promplate.chain.callback import BaseCallback
-from promplate.llm.base import Complete
-
-from ..llm.base import LLM, AsyncComplete, AsyncGenerate, Generate
+from ..llm.base import LLM, AsyncComplete, AsyncGenerate, Complete, Generate
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
 from ..typing import AsyncIterable, Awaitable, Callable, Iterable, List, Mapping, MutableMapping, Optional, Protocol, Type, Union, cast, overload
 from .callback import BaseCallback, Callback
@@ -14,16 +11,13 @@ from .utils import accumulate_any, resolve
 
 class ChainContext(SafeChainMapContext):
     @overload
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     @overload
-    def __init__(self, least: Optional[MutableMapping] = None):
-        ...
+    def __init__(self, least: Optional[MutableMapping] = None): ...
 
     @overload
-    def __init__(self, least: Optional[MutableMapping] = None, *maps: Mapping):
-        ...
+    def __init__(self, least: Optional[MutableMapping] = None, *maps: Mapping): ...
 
     def __init__(self, least: Optional[MutableMapping] = None, *maps: Mapping):
         super().__init__({} if least is None else least, *maps)  # type: ignore
@@ -57,8 +51,7 @@ class AbstractNode(Protocol):
         /,
         complete: Optional[Complete] = None,
         **config,
-    ) -> ChainContext:
-        ...
+    ) -> ChainContext: ...
 
     async def ainvoke(
         self,
@@ -66,8 +59,7 @@ class AbstractNode(Protocol):
         /,
         complete: Union[Complete, Optional[AsyncComplete]] = None,
         **config,
-    ) -> ChainContext:
-        ...
+    ) -> ChainContext: ...
 
     def stream(
         self,
@@ -75,8 +67,7 @@ class AbstractNode(Protocol):
         /,
         generate: Optional[Generate] = None,
         **config,
-    ) -> Iterable[ChainContext]:
-        ...
+    ) -> Iterable[ChainContext]: ...
 
     def astream(
         self,
@@ -84,8 +75,7 @@ class AbstractNode(Protocol):
         /,
         generate: Union[Generate, Optional[AsyncGenerate]] = None,
         **config,
-    ) -> AsyncIterable[ChainContext]:
-        ...
+    ) -> AsyncIterable[ChainContext]: ...
 
     @classmethod
     def _get_chain_type(cls):
@@ -109,8 +99,7 @@ class Interruptable(AbstractNode, Protocol):
         complete: Optional[Complete],
         callbacks: List[BaseCallback],
         **config,
-    ):
-        ...
+    ): ...
 
     async def _ainvoke(
         self,
@@ -119,8 +108,7 @@ class Interruptable(AbstractNode, Protocol):
         complete: Union[Complete, Optional[AsyncComplete]],
         callbacks: List[BaseCallback],
         **config,
-    ):
-        ...
+    ): ...
 
     def _stream(
         self,
@@ -129,8 +117,7 @@ class Interruptable(AbstractNode, Protocol):
         generate: Optional[Generate],
         callbacks: List[BaseCallback],
         **config,
-    ) -> Iterable:
-        ...
+    ) -> Iterable: ...
 
     def _astream(
         self,
@@ -139,8 +126,7 @@ class Interruptable(AbstractNode, Protocol):
         generate: Union[Generate, Optional[AsyncGenerate]],
         callbacks: List[BaseCallback],
         **config,
-    ) -> AsyncIterable:
-        ...
+    ) -> AsyncIterable: ...
 
     callbacks: List[Union[BaseCallback, Type[BaseCallback]]]
 

@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.2.2.post1"
+version = "0.3.3.post1"
 description = "cross-language prompt engineering framework"
 homepage = "https://promplate.dev/"
+documentation = "https://docs.py.promplate.dev/"
 repository = "https://github.com/promplate/core"
 authors = ["Muspi Merol <admin@muspimerol.site>"]
 license = "MIT"
@@ -30,7 +31,7 @@ all = ["aiofiles", "httpx", "openai"]
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5"
-black = "^23"
+black = "^24"
 pytest = "^7"
 coverage = "^7"
 pytest-asyncio = "^0.23"

@@ -5,17 +5,15 @@ from sys import version_info
 
 from ..typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Protocol, Self, Union
 from .builder import get_base_builder
-from .utils import AutoNaming, split_template_tokens
+from .utils import AutoNaming, get_user_agent, split_template_tokens
 
 Context = Dict[str, Any]  # globals must be a real dict
 
 
 class Component(Protocol):
-    def render(self, context: Context) -> str:
-        ...
+    def render(self, context: Context) -> str: ...
 
-    async def arender(self, context: Context) -> str:
-        ...
+    async def arender(self, context: Context) -> str: ...
 
 
 class TemplateCore(AutoNaming):
@@ -149,31 +147,32 @@ class Loader(AutoNaming):
         obj.name = path.stem
         return obj
 
-    _client = None
+    @classmethod
+    def _patch_kwargs(cls, kwargs: dict):
+        return {
+            **{
+                "follow_redirects": True,
+                "base_url": "https://promplate.dev/",
+                "headers": {"User-Agent": get_user_agent(cls)},
+            },
+            **kwargs,
+        }
 
     @classmethod
     def fetch(cls, url: str, **kwargs):
-        if cls._client is None:
-            from httpx import Client
+        from .utils import _get_client
 
-            cls._client = Client(**kwargs)
-
-        response = cls._client.get(url)
-        obj = cls(response.text)
+        response = _get_client().get(url, **cls._patch_kwargs(kwargs))
+        obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
 
-    _aclient = None
-
     @classmethod
     async def afetch(cls, url: str, **kwargs):
-        if cls._aclient is None:
-            from httpx import AsyncClient
+        from .utils import _get_aclient
 
-            cls._aclient = AsyncClient(**kwargs)
-
-        response = await cls._aclient.get(url)
-        obj = cls(response.text)
+        response = await _get_aclient().get(url, **cls._patch_kwargs(kwargs))
+        obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
 
