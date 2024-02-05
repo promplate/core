@@ -145,31 +145,29 @@ class Loader(AutoNaming):
         obj.name = path.stem
         return obj
 
-    _client = None
+    @classmethod
+    def _patch_kwargs(cls, kwargs: dict):
+        return {
+            "follow_redirects": True,
+            "base_url": "https://promplate.dev/",
+            "headers": {"User-Agent": get_user_agent(cls)},
+        } | kwargs
 
     @classmethod
     def fetch(cls, url: str, **kwargs):
-        if cls._client is None:
-            from httpx import Client
+        from .utils import _get_client
 
-            cls._client = Client(**kwargs)
-
-        response = cls._client.get(url)
-        obj = cls(response.text)
+        response = _get_client(cls._patch_kwargs(kwargs)).get(url)
+        obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
 
-    _aclient = None
-
     @classmethod
     async def afetch(cls, url: str, **kwargs):
-        if cls._aclient is None:
-            from httpx import AsyncClient
+        from .utils import _get_aclient
 
-            cls._aclient = AsyncClient(**kwargs)
-
-        response = await cls._aclient.get(url)
-        obj = cls(response.text)
+        response = await _get_aclient(cls._patch_kwargs(kwargs)).get(url)
+        obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
 

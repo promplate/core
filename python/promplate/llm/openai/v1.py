@@ -1,13 +1,12 @@
 from copy import copy
 from functools import cached_property
-from importlib.metadata import version
-from sys import version as py_version
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 
 from openai import AsyncClient, Client  # type: ignore
 
 from ...prompt.chat import Message, ensure
+from ...prompt.utils import get_user_agent
 from ..base import *
 
 P = ParamSpec("P")
@@ -33,14 +32,7 @@ class Config(Configurable):
 
     @cached_property
     def _user_agent(self):
-        return " ".join(
-            (
-                f"Promplate/{version('promplate')} ({self.__class__.__name__})",
-                f"OpenAI/{version('openai')}",
-                f"HTTPX/{version('httpx')}",
-                f"Python/{py_version.split()[0]}",
-            )
-        )
+        return get_user_agent(self, ("OpenAI", "openai"))
 
     @property
     def _config(self):  # type: ignore
