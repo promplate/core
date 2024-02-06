@@ -146,18 +146,23 @@ class Loader(AutoNaming):
         return obj
 
     @classmethod
-    def _patch_kwargs(cls, kwargs: dict):
-        return {
-            "follow_redirects": True,
-            "base_url": "https://promplate.dev/",
-            "headers": {"User-Agent": get_user_agent(cls)},
-        } | kwargs
+    def _patch_kwargs(cls, kwargs: dict) -> dict:
+        return {"headers": {"User-Agent": get_user_agent(cls)}} | kwargs
+
+    @staticmethod
+    def _join_url(url: str):
+        if url.startswith("http"):
+            return url
+
+        from urllib.parse import urljoin
+
+        return urljoin("https://promplate.dev/", url)
 
     @classmethod
     def fetch(cls, url: str, **kwargs):
         from .utils import _get_client
 
-        response = _get_client().get(url, **cls._patch_kwargs(kwargs))
+        response = _get_client().get(cls._join_url(url), **cls._patch_kwargs(kwargs))
         obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
@@ -166,7 +171,7 @@ class Loader(AutoNaming):
     async def afetch(cls, url: str, **kwargs):
         from .utils import _get_aclient
 
-        response = await _get_aclient().get(url, **cls._patch_kwargs(kwargs))
+        response = await _get_aclient().get(cls._join_url(url), **cls._patch_kwargs(kwargs))
         obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
