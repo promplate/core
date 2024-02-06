@@ -1,4 +1,4 @@
-from functools import cached_property, wraps
+from functools import cache, cached_property, wraps
 from inspect import currentframe, isclass
 from re import compile
 from typing import Any, Callable, ParamSpec, TypeVar
@@ -90,16 +90,24 @@ def get_builtins() -> dict[str, Any]:
     return __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
 
 
+@cache
+def version(package: str):
+    from contextlib import suppress
+    from importlib.metadata import PackageNotFoundError, version
+
+    with suppress(PackageNotFoundError):
+        return version(package)
+
+
 @cache_once
 def get_user_agent(self, *additional_packages: tuple[str, str]):
-    from importlib.metadata import version
     from sys import version as py_version
 
     return " ".join(
         (
             f"Promplate/{version('promplate')} ({self.__name__ if isclass(self) else self.__class__.__name__})",
-            *(f"{display_name}/{version(package)}" for display_name, package in additional_packages),
-            f"HTTPX/{version('httpx')}",
+            *(f"{name}/{v}" for name, v in additional_packages),
+            f"HTTPX/{version('httpx') or '-'}",
             f"Python/{py_version.split()[0]}",
         )
     )

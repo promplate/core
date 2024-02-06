@@ -32,7 +32,9 @@ class Config(Configurable):
 
     @cached_property
     def _user_agent(self):
-        return get_user_agent(self, ("OpenAI", "openai"))
+        from openai.version import VERSION
+
+        return get_user_agent(self, ("OpenAI", VERSION))
 
     @property
     def _config(self):  # type: ignore
