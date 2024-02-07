@@ -92,11 +92,12 @@ def get_builtins() -> dict[str, Any]:
 
 @cache
 def version(package: str):
-    from contextlib import suppress
     from importlib.metadata import PackageNotFoundError, version
 
-    with suppress(PackageNotFoundError):
+    try:
         return version(package)
+    except PackageNotFoundError:
+        return None
 
 
 @cache_once
