@@ -359,3 +359,10 @@ def test_elif_tag():
 
 def test_while_loop():
     render_assert("{% while nums %}{{ nums.pop() }}{% else %}!{% endwhile %}", {"nums": [1, 2, 3]}, "321!")
+
+
+def test_custom_indent():
+    template = Template("")
+    assert "\t" in (a := template.get_script())
+    assert "\t" not in (b := template.get_script(indent_str=" "))
+    assert a.replace("\t", " ") == b

@@ -82,8 +82,8 @@ class TemplateCore(AutoNaming):
 
         return f"locals() | dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
 
-    def compile(self, sync=True):
-        self._builder = get_base_builder(sync)
+    def compile(self, sync=True, indent_str="\t"):
+        self._builder = get_base_builder(sync, indent_str)
 
         for token in split_template_tokens(self.text):
             s_token = token.strip()
@@ -119,9 +119,9 @@ class TemplateCore(AutoNaming):
     async def arender(self, context: Context) -> str:
         return await eval(self._arender_code, context)
 
-    def get_script(self, sync=True):
+    def get_script(self, sync=True, indent_str="\t"):
         """compile template string into python script"""
-        self.compile(sync)
+        self.compile(sync, indent_str)
         return str(self._builder)
 
 

@@ -4,26 +4,23 @@ from types import FunctionType
 class CodeBuilder:
     """Build source code conveniently."""
 
-    def __init__(self, indent=0):
+    def __init__(self, indent_level=0, indent_str="\t"):
         self.code = []
-        self.indent_level = indent
+        self.indent_level = indent_level
+        self.indent_str = indent_str
 
     def __str__(self):
         return "".join(map(str, self.code))
 
     def add_line(self, line):
-        """Add a line of source to the code.
-
-        Indentation and newline will be added for you, don't provide them.
-
-        """
-        self.code.extend(("\t" * self.indent_level, line, "\n"))
+        """Add a line of source to the code."""
+        self.code.extend((self.indent_str * self.indent_level, line, "\n"))
 
         return self
 
     def add_section(self):
         """Add a section, a sub-CodeBuilder."""
-        section = CodeBuilder(self.indent_level)
+        section = CodeBuilder(self.indent_level, self.indent_str)
         self.code.append(section)
 
         return section
@@ -49,9 +46,9 @@ class CodeBuilder:
         return global_namespace["render"]
 
 
-def get_base_builder(sync=True):
+def get_base_builder(sync=True, indent_str="\t"):
     return (
-        CodeBuilder()
+        CodeBuilder(indent_str=indent_str)
         .add_line("def render():" if sync else "async def render():")
         .indent()
         .add_line("__parts__ = []")
