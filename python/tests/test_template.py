@@ -309,28 +309,24 @@ def test_multi_line_tags():
 
 def test_multi_line_inside_tag():
     render_assert("{# \n a = 1 \n b = 2 \n #}{{ a + b }}", expected="3")
+    render_assert("{{ [\n1,\n2,\n] }}", expected=str([1, 2]))
 
 
 def test_complex_indent_inside_tag():
     render_assert(
         """
-        {#
+        {{
             sum = 0
             for i in range(10):
                 sum += i
-        #}{{ sum }}
+            sum
+        }}
         """.strip(),
         expected="45",
     )
 
 
 def test_not_a_tag():
-    text = """{{ [
-        1,
-        2
-    ] }}"""
-
-    render_assert(text, expected=text)
     render_assert("{#", expected="{#")
 
 

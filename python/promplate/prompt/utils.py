@@ -4,7 +4,10 @@ from re import compile
 from typing import Any, Callable, ParamSpec, TypeVar
 
 split_template_tokens = compile(
-    r"(\s{%-.*?-%}\s|\s{{-.*?-}}\s|\s{#-[\s\S]*?-#}\s|\s{%-.*?%}|\s{{-.*?}}|\s{#-[\s\S]*?#}|{%.*?-%}\s|{{.*?-}}\s|{#[\s\S]*?-#}\s|{%.*?%}|{{.*?}}|{#[\s\S]*?#})"
+    r"(\s{%-.*?-%}\s|\s{{-[\s\S]*?-}}\s|\s{#-[\s\S]*?-#}\s"
+    r"|\s{%-.*?%}|\s{{-[\s\S]*?}}|\s{#-[\s\S]*?#}"
+    r"|{%.*?-%}\s|{{[\s\S]*?-}}\s|{#[\s\S]*?-#}\s"
+    r"|{%.*?%}|{{[\s\S]*?}}|{#[\s\S]*?#})"
 ).split
 
 

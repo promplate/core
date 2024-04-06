@@ -1,3 +1,4 @@
+from ast import Expr, parse, unparse
 from collections import ChainMap
 from functools import cached_property
 from pathlib import Path
@@ -33,20 +34,28 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _unwrap_token(token: str):
-        return dedent(token[2:-2].strip("-")).strip().splitlines()
+        return dedent(token[2:-2].strip("-")).strip()
 
     def _on_literal_token(self, token: str):
         self._buffer.append(f"__append__({repr(token)})")
 
     def _on_eval_token(self, token):
-        [exp] = self._unwrap_token(token)
+        token = self._unwrap_token(token)
+        if "\n" in token:
+            mod = parse(token)
+            [*rest, last] = mod.body
+            assert isinstance(last, Expr), "{{ }} block must end with an expression, or you should use {# #} block"
+            self._buffer.extend(unparse(rest).splitlines())  # type: ignore
+            exp = unparse(last)
+        else:
+            exp = token
         self._buffer.append(f"__append__({exp})")
 
     def _on_exec_token(self, token):
-        self._buffer.extend(self._unwrap_token(token))
+        self._buffer.extend(self._unwrap_token(token).splitlines())
 
     def _on_special_token(self, token, sync: bool):
-        [inner] = self._unwrap_token(token)
+        inner = self._unwrap_token(token)
 
         if inner.startswith("end"):
             last = self._ops_stack.pop()
@@ -87,7 +96,7 @@ class TemplateCore(AutoNaming):
 
         for token in split_template_tokens(self.text):
             s_token = token.strip()
-            if s_token.startswith("{{") and s_token.endswith("}}") and "\n" not in s_token:
+            if s_token.startswith("{{") and s_token.endswith("}}"):
                 self._on_eval_token(token)
             elif s_token.startswith("{#") and s_token.endswith("#}"):
                 self._on_exec_token(token)
