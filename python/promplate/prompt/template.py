@@ -87,11 +87,11 @@ class TemplateCore(AutoNaming):
 
         for token in split_template_tokens(self.text):
             s_token = token.strip()
-            if s_token.startswith("{{"):
+            if s_token.startswith("{{") and s_token.endswith("}}") and "\n" not in s_token:
                 self._on_eval_token(token)
-            elif s_token.startswith("{#"):
+            elif s_token.startswith("{#") and s_token.endswith("#}"):
                 self._on_exec_token(token)
-            elif s_token.startswith("{%"):
+            elif s_token.startswith("{%") and s_token.endswith("%}") and "\n" not in s_token:
                 self._on_special_token(token, sync)
             else:
                 self._on_literal_token(token)

@@ -324,15 +324,14 @@ def test_complex_indent_inside_tag():
     )
 
 
-def test_multi_line_exp_tag_not_supported():
+def test_not_a_tag():
     text = """{{ [
         1,
         2
     ] }}"""
 
-    with raises(ValueError, match=r"too many values to unpack \(expected 1\)"):
-        # BUG: multi-line expressions should be treated as literal strings.
-        render_assert(text)
+    render_assert(text, expected=text)
+    render_assert("{#", expected="{#")
 
 
 def test_lazy_default_context():
