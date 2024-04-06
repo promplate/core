@@ -1,6 +1,7 @@
 from collections import ChainMap
 from functools import cached_property
 from pathlib import Path
+from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Protocol
 
 from .builder import *
@@ -32,21 +33,20 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _unwrap_token(token: str):
-        return token.strip()[2:-2].strip("-").strip()
+        return dedent(token[2:-2].strip("-")).strip().splitlines()
 
     def _on_literal_token(self, token: str):
         self._buffer.append(f"__append__({repr(token)})")
 
     def _on_eval_token(self, token):
-        exp = self._unwrap_token(token)
+        [exp] = self._unwrap_token(token)
         self._buffer.append(f"__append__({exp})")
 
     def _on_exec_token(self, token):
-        exp = self._unwrap_token(token)
-        self._buffer.append(exp)
+        self._buffer.extend(self._unwrap_token(token))
 
     def _on_special_token(self, token, sync: bool):
-        inner: str = self._unwrap_token(token)
+        [inner] = self._unwrap_token(token)
 
         if inner.startswith("end"):
             last = self._ops_stack.pop()

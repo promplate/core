@@ -307,6 +307,34 @@ def test_multi_line_tags():
     render_assert("{# \n a = [ i for i in range(5) ] \n #}{{ a }}", expected=str(list(range(5))))
 
 
+def test_multi_line_inside_tag():
+    render_assert("{# \n a = 1 \n b = 2 \n #}{{ a + b }}", expected="3")
+
+
+def test_complex_indent_inside_tag():
+    render_assert(
+        """
+        {#
+            sum = 0
+            for i in range(10):
+                sum += i
+        #}{{ sum }}
+        """.strip(),
+        expected="45",
+    )
+
+
+def test_multi_line_exp_tag_not_supported():
+    text = """{{ [
+        1,
+        2
+    ] }}"""
+
+    with raises(ValueError, match=r"too many values to unpack \(expected 1\)"):
+        # BUG: multi-line expressions should be treated as literal strings.
+        render_assert(text)
+
+
 def test_lazy_default_context():
     assert Template("{{ whatever }}", defaultdict(list)).render(get_builtins()) == "[]"
 
