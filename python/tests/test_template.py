@@ -386,6 +386,6 @@ def test_while_loop():
 
 def test_custom_indent():
     template = Template("")
-    assert "\t" in (a := template.get_script())
+    assert "\t" in (a := template.get_script(indent_str="\t"))
     assert "\t" not in (b := template.get_script(indent_str=" "))
     assert a.replace("\t", " ") == b

@@ -166,3 +166,19 @@ class SyncChatOpenAI(ClientConfig, LLM):
 class AsyncChatOpenAI(AsyncClientConfig, LLM):
     complete = AsyncChatComplete.__call__  # type: ignore
     generate = AsyncChatGenerate.__call__  # type: ignore
+
+
+__all__ = (
+    "TextComplete",
+    "AsyncTextComplete",
+    "TextGenerate",
+    "AsyncTextGenerate",
+    "ChatComplete",
+    "AsyncChatComplete",
+    "ChatGenerate",
+    "AsyncChatGenerate",
+    "SyncTextOpenAI",
+    "AsyncTextOpenAI",
+    "SyncChatOpenAI",
+    "AsyncChatOpenAI",
+)

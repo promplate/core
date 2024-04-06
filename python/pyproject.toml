@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.3.4"
-description = "cross-language prompt engineering framework"
+version = "0.3.4"
+description = "Prompt engineering framework for humans"
 homepage = "https://promplate.dev/"
 documentation = "https://docs.py.promplate.dev/"
 repository = "https://github.com/promplate/core"
-authors = ["Muspi Merol <admin@muspimerol.site>"]
+authors = ["Muspi Merol <me@promplate.dev>"]
 license = "MIT"
 readme = "README.md"
 keywords = ["prompt", "template", "nlp", "llm"]
