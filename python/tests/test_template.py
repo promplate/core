@@ -389,3 +389,9 @@ def test_custom_indent():
     assert "\t" in (a := template.get_script(indent_str="\t"))
     assert "\t" not in (b := template.get_script(indent_str=" "))
     assert a.replace("\t", " ") == b
+
+
+def test_spaces_around_tag():
+    render_assert("{{ a -}}\n", {"a": 1}, "1")
+    render_assert("\n{{- b }}", {"b": 2}, "2")
+    render_assert("\n{{- c -}}\n", {"c": 3}, "3")

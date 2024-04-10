@@ -34,7 +34,7 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _unwrap_token(token: str):
-        return dedent(token[2:-2].strip("-")).strip()
+        return dedent(token.strip()[2:-2].strip("-")).strip()
 
     def _on_literal_token(self, token: str):
         self._buffer.append(f"__append__({repr(token)})")
