@@ -302,6 +302,29 @@ def test_multi_line_tags():
     render_assert("{# \n a = [ i for i in range(5) ] \n #}{{ a }}", expected=str(list(range(5))))
 
 
+def test_multi_line_inside_tag():
+    render_assert("{# \n a = 1 \n b = 2 \n #}{{ a + b }}", expected="3")
+    render_assert("{{ [\n1,\n2,\n] }}", expected=str([1, 2]))
+
+
+def test_complex_indent_inside_tag():
+    render_assert(
+        """
+        {{
+            sum = 0
+            for i in range(10):
+                sum += i
+            sum
+        }}
+        """.strip(),
+        expected="45",
+    )
+
+
+def test_not_a_tag():
+    render_assert("{#", expected="{#")
+
+
 def test_lazy_default_context():
     assert Template("{{ whatever }}", defaultdict(list)).render(get_builtins()) == "[]"
 
@@ -354,3 +377,16 @@ def test_elif_tag():
 
 def test_while_loop():
     render_assert("{% while nums %}{{ nums.pop() }}{% else %}!{% endwhile %}", {"nums": [1, 2, 3]}, "321!")
+
+
+def test_custom_indent():
+    template = Template("")
+    assert "\t" in (a := template.get_script(indent_str="\t"))
+    assert "\t" not in (b := template.get_script(indent_str=" "))
+    assert a.replace("\t", " ") == b
+
+
+def test_spaces_around_tag():
+    render_assert("{{ a -}}\n", {"a": 1}, "1")
+    render_assert("\n{{- b }}", {"b": 2}, "2")
+    render_assert("\n{{- c -}}\n", {"c": 3}, "3")

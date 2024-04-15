@@ -7,14 +7,11 @@ if TYPE_CHECKING:
 
 
 class BaseCallback(Protocol):
-    def pre_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]:
-        pass
+    def pre_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]: ...
 
-    def mid_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]:
-        pass
+    def mid_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]: ...
 
-    def end_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]:
-        pass
+    def end_process(self, context: "ChainContext") -> Optional[Union[Context, Awaitable[Optional[Context]]]]: ...
 
     def on_enter(self, node: "Interruptable", context: Optional[Context], config: Context) -> Tuple[Optional[Context], Context]:
         return context, config

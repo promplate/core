@@ -32,7 +32,9 @@ class Config(Configurable):
 
     @cached_property
     def _user_agent(self):
-        return get_user_agent(self, ("OpenAI", "openai"))
+        from openai.version import VERSION
+
+        return get_user_agent(self, ("OpenAI", VERSION))
 
     @property
     def _config(self):  # type: ignore
@@ -89,7 +91,10 @@ class TextGenerate(ClientConfig):
         config = {**self._run_config, **config, **{"stream": True, "prompt": text}}
         stream = self._client.completions.create(**config)
         for event in stream:
-            yield event.choices[0].text
+            try:
+                yield event.choices[0].text
+            except AttributeError:
+                pass
 
 
 class AsyncTextGenerate(AsyncClientConfig):
@@ -97,7 +102,10 @@ class AsyncTextGenerate(AsyncClientConfig):
         config = {**self._run_config, **config, **{"stream": True, "prompt": text}}
         stream = await self._aclient.completions.create(**config)
         async for event in stream:
-            yield event.choices[0].text
+            try:
+                yield event.choices[0].text
+            except AttributeError:
+                pass
 
 
 class ChatComplete(ClientConfig):
@@ -122,7 +130,10 @@ class ChatGenerate(ClientConfig):
         config = {**self._run_config, **config, **{"stream": True, "messages": messages}}
         stream = self._client.chat.completions.create(**config)
         for event in stream:
-            yield event.choices[0].delta.content or ""
+            try:
+                yield event.choices[0].delta.content or ""
+            except AttributeError:
+                pass
 
 
 class AsyncChatGenerate(AsyncClientConfig):
@@ -131,7 +142,10 @@ class AsyncChatGenerate(AsyncClientConfig):
         config = {**self._run_config, **config, **{"stream": True, "messages": messages}}
         stream = await self._aclient.chat.completions.create(**config)
         async for event in stream:
-            yield event.choices[0].delta.content or ""
+            try:
+                yield event.choices[0].delta.content or ""
+            except AttributeError:
+                pass
 
 
 class SyncTextOpenAI(ClientConfig, LLM):
@@ -152,3 +166,19 @@ class SyncChatOpenAI(ClientConfig, LLM):
 class AsyncChatOpenAI(AsyncClientConfig, LLM):
     complete = AsyncChatComplete.__call__  # type: ignore
     generate = AsyncChatGenerate.__call__  # type: ignore
+
+
+__all__ = (
+    "TextComplete",
+    "AsyncTextComplete",
+    "TextGenerate",
+    "AsyncTextGenerate",
+    "ChatComplete",
+    "AsyncChatComplete",
+    "ChatGenerate",
+    "AsyncChatGenerate",
+    "SyncTextOpenAI",
+    "AsyncTextOpenAI",
+    "SyncChatOpenAI",
+    "AsyncChatOpenAI",
+)

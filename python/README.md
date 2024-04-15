@@ -4,7 +4,7 @@
 </Promplate/> = <template> // prompt
 ```
 
-**Promplate** is a prompting framework focusing on developing experience. However, it can also be a super-convenient SDK for simple LLM calls. Promplate progressively enhance your prompting workflow. And it values flexibility as well as perfect conventions. [Learn more](https://promplate.dev/py)
+**Promplate** is a prompting framework focusing on developing experience. However, it can also be a super-convenient SDK for simple LLM calls. Promplate progressively enhance your prompting workflow. And it values flexibility as well as perfect conventions. [Try online](https://promplate.dev/py)
 
 ## Installation
 
@@ -12,7 +12,7 @@
 pip install promplate
 ```
 
-**Promplate** supports both CPython and PyPy, from `3.8` to `3.12`.
+**Promplate** supports both CPython and PyPy, from `3.8` to `3.12`. It even supports running in browsers through wasm implementations of python.
 
 ## Documentation
 

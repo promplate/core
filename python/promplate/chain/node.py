@@ -38,6 +38,9 @@ class ChainContext(SafeChainMapContext):
     def result(self):
         self.__delitem__("__result__")
 
+    def __str__(self):
+        return str({**self})
+
 
 Process = Callable[[ChainContext], Optional[Context]]
 

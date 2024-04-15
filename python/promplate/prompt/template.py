@@ -1,7 +1,9 @@
+from ast import Expr, parse
 from collections import ChainMap
 from functools import cached_property
 from pathlib import Path
 from sys import version_info
+from textwrap import dedent
 
 from ..typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Protocol, Self, Union
 from .builder import get_base_builder
@@ -33,21 +35,34 @@ class TemplateCore(AutoNaming):
 
     @staticmethod
     def _unwrap_token(token: str):
-        return token.strip()[2:-2].strip("-").strip()
+        return dedent(token.strip()[2:-2].strip("-")).strip()
 
     def _on_literal_token(self, token: str):
         self._buffer.append(f"__append__({repr(token)})")
 
     def _on_eval_token(self, token):
-        exp = self._unwrap_token(token)
+        token = self._unwrap_token(token)
+        if "\n" in token:
+            mod = parse(token)
+            [*rest, last] = mod.body
+            assert isinstance(last, Expr), "{{ }} block must end with an expression, or you should use {# #} block"
+            if version_info >= (3, 9):
+                from ast import unparse
+            else:
+                from astor import to_source as unparse  # type: ignore
+
+            for line in rest:
+                self._buffer.extend(unparse(line).splitlines())
+            exp = unparse(last)
+        else:
+            exp = token
         self._buffer.append(f"__append__({exp})")
 
     def _on_exec_token(self, token):
-        exp = self._unwrap_token(token)
-        self._buffer.append(exp)
+        self._buffer.extend(self._unwrap_token(token).splitlines())
 
     def _on_special_token(self, token, sync: bool):
-        inner: str = self._unwrap_token(token)
+        inner = self._unwrap_token(token)
 
         if inner.startswith("end"):
             last = self._ops_stack.pop()
@@ -84,16 +99,16 @@ class TemplateCore(AutoNaming):
             return f"(__l__:=locals().copy(), __l__.update(dict({text[text.index(' ') + 1:]})))[0]" if " " in text else "locals()"
         return f"(__l__:=globals().copy(), __l__.update(dict({text[text.index(' ') + 1:]})))[0]" if " " in text else "globals()"
 
-    def compile(self, sync=True):
-        self._builder = get_base_builder(sync)
+    def compile(self, sync=True, indent_str="\t"):
+        self._builder = get_base_builder(sync, indent_str)
 
         for token in split_template_tokens(self.text):
             s_token = token.strip()
-            if s_token.startswith("{{"):
+            if s_token.startswith("{{") and s_token.endswith("}}"):
                 self._on_eval_token(token)
-            elif s_token.startswith("{#"):
+            elif s_token.startswith("{#") and s_token.endswith("#}"):
                 self._on_exec_token(token)
-            elif s_token.startswith("{%"):
+            elif s_token.startswith("{%") and s_token.endswith("%}") and "\n" not in s_token:
                 self._on_special_token(token, sync)
             else:
                 self._on_literal_token(token)
@@ -121,9 +136,9 @@ class TemplateCore(AutoNaming):
     async def arender(self, context: Context) -> str:
         return await eval(self._arender_code, context)
 
-    def get_script(self, sync=True):
+    def get_script(self, sync=True, indent_str="    "):
         """compile template string into python script"""
-        self.compile(sync)
+        self.compile(sync, indent_str)
         return str(self._builder)
 
 
@@ -148,21 +163,23 @@ class Loader(AutoNaming):
         return obj
 
     @classmethod
-    def _patch_kwargs(cls, kwargs: dict):
-        return {
-            **{
-                "follow_redirects": True,
-                "base_url": "https://promplate.dev/",
-                "headers": {"User-Agent": get_user_agent(cls)},
-            },
-            **kwargs,
-        }
+    def _patch_kwargs(cls, kwargs: dict) -> dict:
+        return {**{"headers": {"User-Agent": get_user_agent(cls)}}, **kwargs}
+
+    @staticmethod
+    def _join_url(url: str):
+        if url.startswith("http"):
+            return url
+
+        from urllib.parse import urljoin
+
+        return urljoin("https://promplate.dev/", url)
 
     @classmethod
     def fetch(cls, url: str, **kwargs):
         from .utils import _get_client
 
-        response = _get_client().get(url, **cls._patch_kwargs(kwargs))
+        response = _get_client().get(cls._join_url(url), **cls._patch_kwargs(kwargs))
         obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj
@@ -171,7 +188,7 @@ class Loader(AutoNaming):
     async def afetch(cls, url: str, **kwargs):
         from .utils import _get_aclient
 
-        response = await _get_aclient().get(url, **cls._patch_kwargs(kwargs))
+        response = await _get_aclient().get(cls._join_url(url), **cls._patch_kwargs(kwargs))
         obj = cls(response.raise_for_status().text)
         obj.name = Path(url).stem
         return obj

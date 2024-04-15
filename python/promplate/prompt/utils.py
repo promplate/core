@@ -1,4 +1,4 @@
-from functools import cached_property, wraps
+from functools import cached_property, lru_cache, wraps
 from inspect import currentframe, isclass
 from re import compile
 from typing import Dict, Tuple
@@ -6,7 +6,10 @@ from typing import Dict, Tuple
 from ..typing import Any, Callable, ParamSpec, TypeVar
 
 split_template_tokens = compile(
-    r"(\s{%-.*?-%}\s|\s{{-.*?-}}\s|\s{#-.*?-#}\s|\s{%-.*?%}|\s{{-.*?}}|\s{#-.*?#}|{%.*?-%}\s|{{.*?-}}\s|{#.*?-#}\s|{%.*?%}|{{.*?}}|{#.*?#})"
+    r"(\s{%-.*?-%}\s|\s{{-[\s\S]*?-}}\s|\s{#-[\s\S]*?-#}\s"
+    r"|\s{%-.*?%}|\s{{-[\s\S]*?}}|\s{#-[\s\S]*?#}"
+    r"|{%.*?-%}\s|{{[\s\S]*?-}}\s|{#[\s\S]*?-#}\s"
+    r"|{%.*?%}|{{[\s\S]*?}}|{#[\s\S]*?#})"
 ).split
 
 
@@ -92,16 +95,25 @@ def get_builtins() -> Dict[str, Any]:
     return __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
 
 
+@lru_cache(None)
+def version(package: str):
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version(package)
+    except PackageNotFoundError:
+        return None
+
+
 @cache_once
 def get_user_agent(self, *additional_packages: Tuple[str, str]):
-    from importlib.metadata import version
     from sys import version as py_version
 
     return " ".join(
         (
             f"Promplate/{version('promplate')} ({self.__name__ if isclass(self) else self.__class__.__name__})",
-            *(f"{display_name}/{version(package)}" for display_name, package in additional_packages),
-            f"HTTPX/{version('httpx')}",
+            *(f"{name}/{v}" for name, v in additional_packages),
+            f"HTTPX/{version('httpx') or '-'}",
             f"Python/{py_version.split()[0]}",
         )
     )
