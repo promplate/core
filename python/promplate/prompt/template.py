@@ -24,8 +24,6 @@ class TemplateCore(AutoNaming):
         """Construct a Templite with the given `text`."""
 
         self.text = text
-        self._buffer = []
-        self._ops_stack = []
 
     def _flush(self):
         for line in self._buffer:
@@ -92,9 +90,13 @@ class TemplateCore(AutoNaming):
         return f"locals() | dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
 
     def compile(self, sync=True, indent_str="\t"):
+        self._buffer = []
+        self._ops_stack = []
         self._builder = get_base_builder(sync, indent_str)
 
         for token in split_template_tokens(self.text):
+            if not token:
+                continue
             s_token = token.strip()
             if s_token.startswith("{{") and s_token.endswith("}}"):
                 self._on_eval_token(token)

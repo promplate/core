@@ -234,6 +234,10 @@ def test_whitespace_handling():
     )
 
 
+def test_whitespace_among_tags():
+    render_assert("@{{ a }} {{- b -}} {{ c }}!", {"a": 1, "b": 2, "c": 3}, "@123!")
+
+
 def test_non_ascii():
     render_assert("{{where}} ollǝɥ", {"where": "ǝɹǝɥʇ"}, "ǝɹǝɥʇ ollǝɥ")
 
