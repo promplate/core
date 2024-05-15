@@ -1,4 +1,4 @@
-from inspect import Parameter, isasyncgen, isawaitable, signature
+from inspect import Parameter, isawaitable, signature
 from itertools import accumulate
 from typing import AsyncIterable, Awaitable, Callable, Iterable, TypeVar, cast
 
@@ -37,8 +37,8 @@ async def async_accumulate(async_iterable: AsyncIterable[str]):
 
 
 def accumulate_any(any_iterable: Iterable[str] | AsyncIterable[str]):
-    if isasyncgen(any_iterable):
-        return async_accumulate(any_iterable)
+    if "__aiter__" in dir(any_iterable):
+        return async_accumulate(any_iterable)  # type: ignore
 
     async def _():
         for i in accumulate(cast(Iterable[str], any_iterable)):
