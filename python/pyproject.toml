@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.4.2.post1"
+version = "0.3.4.4.post1"
 description = "Prompt engineering framework for humans"
 homepage = "https://promplate.dev/"
 documentation = "https://docs.py.promplate.dev/"

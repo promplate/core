@@ -5,12 +5,7 @@ from typing import Dict, Tuple
 
 from ..typing import Any, Callable, ParamSpec, TypeVar
 
-split_template_tokens = compile(
-    r"(\s{%-.*?-%}\s|\s{{-[\s\S]*?-}}\s|\s{#-[\s\S]*?-#}\s"
-    r"|\s{%-.*?%}|\s{{-[\s\S]*?}}|\s{#-[\s\S]*?#}"
-    r"|{%.*?-%}\s|{{[\s\S]*?-}}\s|{#[\s\S]*?-#}\s"
-    r"|{%.*?%}|{{[\s\S]*?}}|{#[\s\S]*?#})"
-).split
+split_template_tokens = compile(r"((?:\s{%-|{%).*?(?:%}|-%}\s))|((?:\s{{-|{{)[\s\S]*?(?:}}|-}}\s))|((?:\s{#-|{#)[\s\S]*?(?:#}|-#}\s))").split
 
 
 var_name_checker = compile(r"[_a-zA-Z]\w*$")
