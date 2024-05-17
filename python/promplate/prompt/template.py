@@ -1,9 +1,10 @@
 from ast import Expr, parse, unparse
 from collections import ChainMap
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import Path
+from sys import path as sys_path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 from .builder import *
 from .utils import *
@@ -114,21 +115,39 @@ class TemplateCore(AutoNaming):
         self._builder.add_line("return ''.join(map(str, __parts__))")
         self._builder.dedent()
 
+    error_handling: Literal["linecache", "tempfile", "file"] = "file" if __debug__ else "tempfile"
+
+    def _patch_for_error_handling(self, sync: bool):
+        match self.error_handling:
+            case "linecache":
+                add_linecache(self.name, partial(self.get_script, sync, "\t"))
+            case "file" | "tempfile":
+                file = save_tempfile(self.name, self.get_script(sync, "\t"), self.error_handling == "tempfile")
+                sys_path.append(str(file.parent))
+
     @cached_property
     def _render_code(self):
         self.compile()
-        return self._builder.get_render_function().__code__.replace(co_filename=str(self), co_name="render")
+        return self._builder.get_render_function().__code__.replace(co_filename=self.name, co_name="render")
 
     def render(self, context: Context) -> str:
-        return eval(self._render_code, context)
+        try:
+            return eval(self._render_code, context)
+        except Exception:
+            self._patch_for_error_handling(sync=True)
+            raise
 
     @cached_property
     def _arender_code(self):
         self.compile(sync=False)
-        return self._builder.get_render_function().__code__.replace(co_filename=str(self), co_name="arender")
+        return self._builder.get_render_function().__code__.replace(co_filename=self.name, co_name="arender")
 
     async def arender(self, context: Context) -> str:
-        return await eval(self._arender_code, context)
+        try:
+            return await eval(self._arender_code, context)
+        except Exception:
+            self._patch_for_error_handling(sync=False)
+            raise
 
     def get_script(self, sync=True, indent_str="    "):
         """compile template string into python script"""

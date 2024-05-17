@@ -1,5 +1,6 @@
 from functools import cache, cached_property, wraps
 from inspect import currentframe, isclass
+from pathlib import Path
 from re import compile
 from typing import Any, Callable, ParamSpec, TypeVar
 
@@ -136,3 +137,26 @@ def _get_aclient():
     from httpx import AsyncClient
 
     return AsyncClient(follow_redirects=True, http2=_is_http2_available())
+
+
+def add_linecache(filename: str, source_getter: Callable[[], str]):
+    import linecache
+
+    linecache.cache[filename] = (source_getter,)
+
+
+def save_tempfile(filename: str, source: str, auto_deletion: bool):
+    from tempfile import mkdtemp
+
+    file = Path(mkdtemp(prefix="promplate-")) / filename
+    file.write_text(source)
+
+    if auto_deletion:
+        import atexit
+
+        @atexit.register
+        def _():
+            file.unlink(missing_ok=True)
+            file.parent.rmdir()
+
+    return file

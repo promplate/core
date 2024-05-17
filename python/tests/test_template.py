@@ -1,6 +1,7 @@
 """Tests for the template syntax."""
 
 from collections import defaultdict
+from traceback import format_exc
 
 from pytest import raises
 
@@ -399,3 +400,19 @@ def test_spaces_around_tag():
     render_assert("{{ a -}}\n", {"a": 1}, "1")
     render_assert("\n{{- b }}", {"b": 2}, "2")
     render_assert("\n{{- c -}}\n", {"c": 3}, "3")
+
+
+def test_error_handling():
+    t = Template("{{ a }}")
+
+    try:
+        t.error_handling = False  # type: ignore
+        t.render()
+    except NameError:
+        assert "__append__(a)" not in format_exc()
+
+    try:
+        t.error_handling = "linecache"
+        t.render()
+    except NameError:
+        assert "__append__(a)" in format_exc()

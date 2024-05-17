@@ -41,5 +41,5 @@ Development should be done on `dev` branch, using `>=3.10` language features. Th
 
 - [ ] more documentation
 - [ ] javascript implementation
-- [ ] improve error handling
-  - possible ways would be similar to [`Jinja2`](https://github.com/pallets/jinja/blob/main/src/jinja2/debug.py)
+- [x] improved error handling
+  - display compiled code when error occurs through `linecache` or `tempfile` (default)
