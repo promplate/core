@@ -170,3 +170,14 @@ def test_ensure_method():
     assert new_ctx["key"] == "value"
     assert len(new_ctx.maps) == 1
     assert len(new_ctx) == 1
+
+
+def test_subclass():
+    class MyChainContext(ChainContext):
+        pass
+
+    ctx = MyChainContext()
+
+    assert isinstance(ChainContext(ctx), MyChainContext)
+
+    assert isinstance(ChainContext.ensure(ctx), MyChainContext)

@@ -1,25 +1,37 @@
 from inspect import isclass
 from itertools import accumulate
-from typing import Callable, Mapping, MutableMapping, overload
+from typing import Callable, Mapping, MutableMapping, TypeVar, overload
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
 from .callback import BaseCallback, Callback
 from .utils import accumulate_any, resolve
 
+C = TypeVar("C", bound="ChainContext")
+
 
 class ChainContext(SafeChainMapContext):
     @overload
-    def __init__(self): ...
+    def __new__(cls): ...
 
     @overload
-    def __init__(self, least: MutableMapping | None = None): ...
+    def __new__(cls, least: C, *maps: Mapping) -> C: ...
 
     @overload
-    def __init__(self, least: MutableMapping | None = None, *maps: Mapping): ...
+    def __new__(cls, least: MutableMapping | None = None, *maps: Mapping): ...
 
     def __init__(self, least: MutableMapping | None = None, *maps: Mapping):
         super().__init__({} if least is None else least, *maps)  # type: ignore
+
+    def __new__(cls, *args, **kwargs):  # type: ignore
+        try:
+            least = args[0]
+        except IndexError:
+            least = kwargs.get("least")
+        if isinstance(least, cls) and least.__class__ is not cls:
+            return least.__class__(*args, **kwargs)
+
+        return super().__new__(cls, *args, **kwargs)
 
     @classmethod
     def ensure(cls, context):
