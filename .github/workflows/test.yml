@@ -19,18 +19,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         working-directory: python
+        env: { UV_SYSTEM_PYTHON: true }
         run: |
-          python -m pip install -U pip poetry
-          poetry install --all-extras --with dev
+          pip install uv
+          uv pip install .[all] pytest pytest-asyncio coverage
       - name: Run tests
         working-directory: python
         run: |
-          poetry run coverage run -m pytest
+          coverage run -m pytest
       - name: Show coverage report
         working-directory: python
         run: |
-          poetry run coverage report
+          coverage report
       - name: Check types
         working-directory: python
         run: |
-          poetry run npx -y pyright
+          npx -y pyright
