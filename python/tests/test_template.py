@@ -416,3 +416,12 @@ def test_error_handling():
         t.render()
     except NameError:
         assert "__append__(a)" in format_exc()
+
+
+def test_error_handling_namesake():
+    with raises(ValueError, match="123"):
+        Template("{# raise ValueError(123) #}").render()
+    try:
+        Template("{# raise TypeError(123) #}").render()
+    except TypeError:
+        assert "ValueError" not in format_exc()

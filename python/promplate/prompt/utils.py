@@ -146,7 +146,10 @@ def add_linecache(filename: str, source_getter: Callable[[], str]):
 
 
 def save_tempfile(filename: str, source: str, auto_deletion: bool):
-    from tempfile import mkdtemp
+    from tempfile import gettempdir, mkdtemp
+
+    for i in Path(gettempdir()).glob(f"promplate-*/{filename}"):
+        i.unlink()
 
     file = Path(mkdtemp(prefix="promplate-")) / filename
     file.write_text(source)
