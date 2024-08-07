@@ -13,13 +13,6 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def same_params_as(_: Callable[P, Any]):
-    def func(__init__: Callable[..., None]) -> Callable[P, None]:
-        return __init__  # type: ignore
-
-    return func
-
-
 class Config(Configurable):
     def __init__(self, **config):
         super().__init__(**config)
@@ -59,6 +52,8 @@ class Config(Configurable):
 
 
 if TYPE_CHECKING:
+
+    def same_params_as(_: Callable[P, Any]) -> Callable[[Callable[..., None]], Callable[P, None]]: ...
 
     class ClientConfig(Config):
         @same_params_as(Client)
