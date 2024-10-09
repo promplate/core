@@ -377,6 +377,10 @@ def test_components_context():
     assert Template("{% a b=1, c=2 %}").render({"a": Template("{{ b }}{{ c }}{{ d }}"), "d": 3}) == "123"
 
 
+def test_components_in_for_loop():
+    assert Template("{% for i in '123' %}{% a %}{% endfor %}").render({"a": Template("{{ i }}")}) == "123"
+
+
 def test_else_tag_in_for_loop():
     render_assert("{% for i in '123' %}{{ i }}{% else %}4{% endfor %}", None, "1234")
 
