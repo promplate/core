@@ -19,6 +19,7 @@ async def test_accumulate():
     assert await anext(it) == "a"
     assert await anext(it) == "ab"
     assert await anext(it) == "abc"
+    await it.aclose()
 
 
 async def test_accumulate_empty():
