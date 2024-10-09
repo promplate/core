@@ -12,7 +12,7 @@
 pip install promplate
 ```
 
-**Promplate** supports both CPython and PyPy, from `3.8` to `3.12`. It even supports running in browsers through wasm implementations of python.
+**Promplate** supports both CPython and PyPy, from `3.8` to `3.13`. It even supports running in browsers through wasm implementations of python.
 
 ## Documentation
 
