@@ -3,6 +3,7 @@ from collections import ChainMap
 from functools import cached_property, partial
 from pathlib import Path
 from sys import path as sys_path
+from sys import version_info
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
@@ -87,7 +88,8 @@ class TemplateCore(AutoNaming):
     @staticmethod
     def _make_context(text: str):
         """generate context parameter if specified otherwise use locals() by default"""
-
+        if version_info >= (3, 13):
+            return f"globals() | locals() | dict({text[text.index(' ') + 1:]})" if " " in text else "globals() | locals()"
         return f"locals() | dict({text[text.index(' ') + 1:]})" if " " in text else "locals()"
 
     def compile(self, sync=True, indent_str="\t"):
