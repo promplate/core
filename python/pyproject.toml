@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "promplate"
-version = "0.3.4.10"
+version = "0.3.4.11"
 description = "Prompt engineering framework for humans"
 homepage = "https://promplate.dev/"
 documentation = "https://docs.py.promplate.dev/"
@@ -19,7 +19,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 typing-extensions = { version = "^4", python = "<3.12" }
-aiofiles = { version = "^23.2", optional = true }
+aiofiles = { version = ">=23.2", optional = true }
 httpx = { version = ">=0.24, <1.0", optional = true }
 openai = { version = ">=0.27, <2.0", optional = true }
 
@@ -32,9 +32,9 @@ all = ["aiofiles", "httpx", "openai"]
 [tool.poetry.group.dev.dependencies]
 isort = "^5"
 black = "^24"
-pytest = "^7"
+pytest = "^8"
 coverage = "^7"
-pytest-asyncio = "^0.23"
+pytest-asyncio = "^0.25"
 
 [tool.pdm.scripts]
 format = { composite = ["isort ./{args}", "black ./{args}"] }

@@ -35,7 +35,7 @@ The language design of promplate is similar to `Jinja2`. So you can use the `.j2
 
 Development should be done on `dev` branch, using `>=3.10` language features. The `master` branch is used for `py3.8` compatible releases.
 
-**Promplate** is well tested with `pytest`. GitHub Actions are used to run tests and linting. And there are test results continually generated on [Vercel(py3.9)](https://promplate-core.vercel.app/) and [Netlify(py3.8)](https://promplate-core.netlify.app/). There is [a coverage report](https://promplate-python-coverage.onrender.com/) too.
+**Promplate** is well tested with `pytest`. GitHub Actions are used to run tests and linting. And there are test results continually generated on [Vercel](https://promplate-core.vercel.app/) and [Netlify](https://promplate-core.netlify.app/). There is [a coverage report](https://promplate-python-coverage.onrender.com/) too.
 
 ## Future Features (or TODOs?)
 
