@@ -5,7 +5,7 @@ from pathlib import Path
 from sys import path as sys_path
 from sys import version_info
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from .builder import *
 from .utils import *
@@ -209,16 +209,8 @@ class Loader(AutoNaming):
         return obj
 
 
-class SafeChainMapContext(ChainMap, dict):
-    if TYPE_CHECKING:  # fix type from `collections.ChainMap`
-        from sys import version_info
-
-        if version_info >= (3, 11):
-            from typing_extensions import Self
-        else:
-            from typing import Self
-
-        copy: Callable[[Self], Self]
+class SafeChainMapContext(ChainMap, dict):  # type: ignore
+    pass
 
 
 class Template(TemplateCore, Loader):
