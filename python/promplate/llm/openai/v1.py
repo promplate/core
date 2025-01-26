@@ -1,3 +1,4 @@
+from contextlib import suppress
 from copy import copy
 from functools import cached_property
 from types import MappingProxyType
@@ -86,10 +87,8 @@ class TextGenerate(ClientConfig):
         config = self._run_config | config | {"stream": True, "prompt": text}
         stream = self._client.completions.create(**config)
         for event in stream:
-            try:
+            with suppress(AttributeError, IndexError):
                 yield event.choices[0].text
-            except AttributeError:
-                pass
 
 
 class AsyncTextGenerate(AsyncClientConfig):
@@ -97,10 +96,8 @@ class AsyncTextGenerate(AsyncClientConfig):
         config = self._run_config | config | {"stream": True, "prompt": text}
         stream = await self._aclient.completions.create(**config)
         async for event in stream:
-            try:
+            with suppress(AttributeError, IndexError):
                 yield event.choices[0].text
-            except AttributeError:
-                pass
 
 
 class ChatComplete(ClientConfig):
@@ -125,10 +122,8 @@ class ChatGenerate(ClientConfig):
         config = self._run_config | config | {"stream": True, "messages": messages}
         stream = self._client.chat.completions.create(**config)
         for event in stream:
-            try:
+            with suppress(AttributeError, IndexError):
                 yield event.choices[0].delta.content or ""
-            except AttributeError:
-                pass
 
 
 class AsyncChatGenerate(AsyncClientConfig):
@@ -137,10 +132,8 @@ class AsyncChatGenerate(AsyncClientConfig):
         config = self._run_config | config | {"stream": True, "messages": messages}
         stream = await self._aclient.chat.completions.create(**config)
         async for event in stream:
-            try:
+            with suppress(AttributeError, IndexError):
                 yield event.choices[0].delta.content or ""
-            except AttributeError:
-                pass
 
 
 class SyncTextOpenAI(ClientConfig, LLM):
