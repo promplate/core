@@ -6,12 +6,12 @@ T = TypeVar("T")
 
 
 def appender(to_append: list[T]) -> Callable[[T], T]:
-    def append_processer(func: T) -> T:
+    def append_processor(func: T) -> T:
         to_append.append(func)
 
         return func
 
-    return append_processer
+    return append_processor
 
 
 def is_positional_parameter(p: Parameter):
