@@ -1,6 +1,6 @@
 from inspect import isclass
 from itertools import accumulate
-from typing import Callable, Mapping, MutableMapping, TypeVar, overload
+from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, TypeVar, overload
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
@@ -105,7 +105,7 @@ def ensure_callbacks(callbacks: list[BaseCallback | type[BaseCallback]]) -> list
     return [i() if isclass(i) else i for i in callbacks]
 
 
-class Interruptable(AbstractNode, Protocol):
+class Interruptible(AbstractNode, Protocol):
     def _invoke(
         self,
         context: ChainContext,
@@ -301,7 +301,17 @@ class Interruptable(AbstractNode, Protocol):
         self._context = None
 
 
-class Node(Loader, Interruptable):
+if TYPE_CHECKING:
+    from typing_extensions import deprecated  # type: ignore
+
+    @deprecated("Use `Interruptible` instead")
+    class Interruptable(Interruptible, Protocol): ...
+
+else:
+    Interruptable = Interruptible
+
+
+class Node(Loader, Interruptible):
     def __init__(
         self,
         template: Template | str,
@@ -383,7 +393,7 @@ class Node(Loader, Interruptable):
         return f"</{self.name}/>"
 
 
-class Loop(Interruptable):
+class Loop(Interruptible):
     def __init__(self, chain: AbstractNode, partial_context: Context | None = None):
         self.chain = chain
         self._context = partial_context
@@ -420,7 +430,7 @@ class Loop(Interruptable):
             await self._apply_async_end_processes(context, callbacks)
 
 
-class Chain(Interruptable):
+class Chain(Interruptible):
     def __init__(self, *nodes: AbstractNode, partial_context: Context | None = None):
         self.nodes = list(nodes)
         self._context = partial_context
@@ -472,7 +482,7 @@ class Chain(Interruptable):
 
 
 class Jump(Exception):
-    def __init__(self, into: Interruptable | None = None, out_of: Interruptable | None = None):
+    def __init__(self, into: Interruptible | None = None, out_of: Interruptible | None = None):
         self.into = into
         self.out_of = out_of
 
