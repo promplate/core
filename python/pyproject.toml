@@ -30,8 +30,8 @@ openai = ["openai"]
 all = ["aiofiles", "httpx", "openai"]
 
 [tool.poetry.group.dev.dependencies]
-isort = "^5"
-black = "^24"
+isort = "^6"
+black = "^25"
 pytest = "^8"
 coverage = "^7"
 pytest-asyncio = "^0.25"
