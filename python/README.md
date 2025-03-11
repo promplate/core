@@ -42,4 +42,4 @@ Development should be done on `dev` branch, using `>=3.10` language features. Th
 - [ ] more documentation
 - [ ] javascript implementation
 - [x] improved error handling
-  - display compiled code when error occurs through `linecache` or `tempfile` (default)
+  - display compiled code when error occurs through `linecache` or `tempfile`

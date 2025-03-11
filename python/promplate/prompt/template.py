@@ -117,7 +117,11 @@ class TemplateCore(AutoNaming):
         self._builder.add_line("return ''.join(map(str, __parts__))")
         self._builder.dedent()
 
-    error_handling: Literal["linecache", "tempfile", "file"] = "file" if __debug__ else "tempfile"
+    error_handling: Literal["linecache", "tempfile", "file"]
+    if version_info >= (3, 13):
+        error_handling = "linecache"
+    else:
+        error_handling = "tempfile" if __debug__ else "file"
 
     def _patch_for_error_handling(self, sync: bool):
         match self.error_handling:
