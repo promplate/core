@@ -105,7 +105,7 @@ class ChatComplete(ClientConfig):
         messages = ensure(messages)
         config = self._run_config | config | {"messages": messages}
         result = self._client.chat.completions.create(**config, stream=False)
-        return result.choices[0].message.content
+        return result.choices[0].message.content or ""
 
 
 class AsyncChatComplete(AsyncClientConfig):
@@ -113,7 +113,7 @@ class AsyncChatComplete(AsyncClientConfig):
         messages = ensure(messages)
         config = self._run_config | config | {"messages": messages}
         result = await self._aclient.chat.completions.create(**config, stream=False)
-        return result.choices[0].message.content
+        return result.choices[0].message.content or ""
 
 
 class ChatGenerate(ClientConfig):
