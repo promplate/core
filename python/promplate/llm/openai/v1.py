@@ -70,22 +70,22 @@ else:
 
 class TextComplete(ClientConfig):
     def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": False, "prompt": text}
-        result = self._client.completions.create(**config)
+        config = self._run_config | config | {"prompt": text}
+        result = self._client.completions.create(**config, stream=False)
         return result.choices[0].text
 
 
 class AsyncTextComplete(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": False, "prompt": text}
-        result = await self._aclient.completions.create(**config)
+        config = self._run_config | config | {"prompt": text}
+        result = await self._aclient.completions.create(**config, stream=False)
         return result.choices[0].text
 
 
 class TextGenerate(ClientConfig):
     def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": True, "prompt": text}
-        stream = self._client.completions.create(**config)
+        config = self._run_config | config | {"prompt": text}
+        stream = self._client.completions.create(**config, stream=True)
         for event in stream:
             with suppress(AttributeError, IndexError):
                 yield event.choices[0].text
@@ -93,8 +93,8 @@ class TextGenerate(ClientConfig):
 
 class AsyncTextGenerate(AsyncClientConfig):
     async def __call__(self, text: str, /, **config):
-        config = self._run_config | config | {"stream": True, "prompt": text}
-        stream = await self._aclient.completions.create(**config)
+        config = self._run_config | config | {"prompt": text}
+        stream = await self._aclient.completions.create(**config, stream=True)
         async for event in stream:
             with suppress(AttributeError, IndexError):
                 yield event.choices[0].text
@@ -103,24 +103,24 @@ class AsyncTextGenerate(AsyncClientConfig):
 class ChatComplete(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": False, "messages": messages}
-        result = self._client.chat.completions.create(**config)
+        config = self._run_config | config | {"messages": messages}
+        result = self._client.chat.completions.create(**config, stream=False)
         return result.choices[0].message.content
 
 
 class AsyncChatComplete(AsyncClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": False, "messages": messages}
-        result = await self._aclient.chat.completions.create(**config)
+        config = self._run_config | config | {"messages": messages}
+        result = await self._aclient.chat.completions.create(**config, stream=False)
         return result.choices[0].message.content
 
 
 class ChatGenerate(ClientConfig):
     def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": True, "messages": messages}
-        stream = self._client.chat.completions.create(**config)
+        config = self._run_config | config | {"messages": messages}
+        stream = self._client.chat.completions.create(**config, stream=True)
         for event in stream:
             with suppress(AttributeError, IndexError):
                 yield event.choices[0].delta.content or ""
@@ -129,8 +129,8 @@ class ChatGenerate(ClientConfig):
 class AsyncChatGenerate(AsyncClientConfig):
     async def __call__(self, messages: list[Message] | str, /, **config):
         messages = ensure(messages)
-        config = self._run_config | config | {"stream": True, "messages": messages}
-        stream = await self._aclient.chat.completions.create(**config)
+        config = self._run_config | config | {"messages": messages}
+        stream = await self._aclient.chat.completions.create(**config, stream=True)
         async for event in stream:
             with suppress(AttributeError, IndexError):
                 yield event.choices[0].delta.content or ""
