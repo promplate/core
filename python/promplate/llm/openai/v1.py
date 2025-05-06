@@ -4,7 +4,7 @@ from functools import cached_property
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, ParamSpec, TypeVar
 
-from openai import AsyncClient, Client  # type: ignore
+from openai import AsyncClient, Client
 
 from ...prompt.chat import Message, ensure
 from ...prompt.utils import _get_aclient, _get_client, get_user_agent
@@ -137,23 +137,23 @@ class AsyncChatGenerate(AsyncClientConfig):
 
 
 class SyncTextOpenAI(ClientConfig, LLM):
-    complete = TextComplete.__call__  # type: ignore
-    generate = TextGenerate.__call__  # type: ignore
+    complete = TextComplete.__call__
+    generate = TextGenerate.__call__
 
 
 class AsyncTextOpenAI(AsyncClientConfig, LLM):
-    complete = AsyncTextComplete.__call__  # type: ignore
-    generate = AsyncTextGenerate.__call__  # type: ignore
+    complete = AsyncTextComplete.__call__
+    generate = AsyncTextGenerate.__call__
 
 
 class SyncChatOpenAI(ClientConfig, LLM):
-    complete = ChatComplete.__call__  # type: ignore
-    generate = ChatGenerate.__call__  # type: ignore
+    complete = ChatComplete.__call__
+    generate = ChatGenerate.__call__
 
 
 class AsyncChatOpenAI(AsyncClientConfig, LLM):
-    complete = AsyncChatComplete.__call__  # type: ignore
-    generate = AsyncChatGenerate.__call__  # type: ignore
+    complete = AsyncChatComplete.__call__
+    generate = AsyncChatGenerate.__call__
 
 
 __all__ = (

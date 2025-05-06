@@ -302,7 +302,7 @@ class Interruptible(AbstractNode, Protocol):
 
 
 if TYPE_CHECKING:
-    from typing_extensions import deprecated  # type: ignore
+    from typing_extensions import deprecated
 
     @deprecated("Use `Interruptible` instead")
     class Interruptable(Interruptible, Protocol): ...

@@ -26,7 +26,7 @@ async def resolve(maybe_awaitable: T | Awaitable[T], /) -> T:
     while isawaitable(maybe_awaitable):
         maybe_awaitable = await maybe_awaitable
 
-    return maybe_awaitable  # type: ignore
+    return maybe_awaitable
 
 
 async def async_accumulate(async_iterable: AsyncIterable[str]):
