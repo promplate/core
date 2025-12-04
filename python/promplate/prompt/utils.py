@@ -1,5 +1,4 @@
 from functools import cache, cached_property, wraps
-from inspect import currentframe, isclass
 from pathlib import Path
 from re import compile
 from typing import Any, Callable, ParamSpec, TypeVar
@@ -30,6 +29,8 @@ class AutoNaming:
         return obj
 
     def _bind_frame(self):
+        from inspect import currentframe
+
         self._frame = currentframe()
 
     @cached_property
@@ -107,7 +108,7 @@ def get_user_agent(self, *additional_packages: tuple[str, str]):
 
     return " ".join(
         (
-            f"Promplate/{version('promplate')} ({self.__name__ if isclass(self) else self.__class__.__name__})",
+            f"Promplate/{version('promplate')} ({self.__name__ if isinstance(self, type) else self.__class__.__name__})",
             *(f"{name}/{v}" for name, v in additional_packages),
             f"HTTPX/{version('httpx') or '-'}",
             f"Python/{py_version.split()[0]}",

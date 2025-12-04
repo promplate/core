@@ -1,6 +1,5 @@
-from inspect import isclass
 from itertools import accumulate
-from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, TypeVar, overload
+from typing import TYPE_CHECKING, Callable, Mapping, MutableMapping, TypeVar, cast, overload
 
 from ..llm.base import *
 from ..prompt.template import Context, Loader, SafeChainMapContext, Template
@@ -102,7 +101,7 @@ class AbstractNode(Protocol):
 
 
 def ensure_callbacks(callbacks: list[BaseCallback | type[BaseCallback]]) -> list[BaseCallback]:
-    return [i() if isclass(i) else i for i in callbacks]
+    return [i() if isinstance(i, type) else i for i in callbacks]
 
 
 class Interruptible(AbstractNode, Protocol):

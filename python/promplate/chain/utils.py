@@ -1,6 +1,8 @@
-from inspect import Parameter, isawaitable, signature
 from itertools import accumulate
-from typing import AsyncIterable, Awaitable, Callable, Iterable, TypeVar, cast
+from typing import TYPE_CHECKING, AsyncIterable, Awaitable, Callable, Iterable, TypeVar, cast
+
+if TYPE_CHECKING:
+    from inspect import Parameter
 
 T = TypeVar("T")
 
@@ -14,15 +16,21 @@ def appender(to_append: list[T]) -> Callable[[T], T]:
     return append_processor
 
 
-def is_positional_parameter(p: Parameter):
+def is_positional_parameter(p: "Parameter"):
+    from inspect import Parameter
+
     return p.kind is Parameter.POSITIONAL_OR_KEYWORD or p.kind is Parameter.KEYWORD_ONLY
 
 
 def count_position_parameters(func):
+    from inspect import signature
+
     return sum(map(is_positional_parameter, signature(func).parameters.values()))
 
 
 async def resolve(maybe_awaitable: T | Awaitable[T], /) -> T:
+    from inspect import isawaitable
+
     while isawaitable(maybe_awaitable):
         maybe_awaitable = await maybe_awaitable
 
